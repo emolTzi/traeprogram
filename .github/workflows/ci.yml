@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 最小权限：工作流只需读代码
+permissions:
+  contents: read
+
+# 同一分支的新推送会取消上一次未完成的运行，省额度
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 注意：作业名 `build` 被 main 分支保护规则引用为必需检查。
+  # 重命名此作业会导致 PR 永远等不到检查结果，务必同步修改分支保护配置。
+  build:
+    name: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v5
+
+      # ---------------------------------------------------------------------
+      # TODO: 技术栈确定后，删除下面的占位步骤，换成真实构建命令。
+      # 下方三种常见栈的片段可直接复制（连同 `- name:` 一起）。
+      # ---------------------------------------------------------------------
+
+      # --- C# / .NET ---
+      # - name: 安装 .NET
+      #   uses: actions/setup-dotnet@v4
+      #   with:
+      #     dotnet-version: '8.0.x'
+      # - name: 还原依赖
+      #   run: dotnet restore
+      # - name: 构建
+      #   run: dotnet build --no-restore -c Release
+      # - name: 测试
+      #   run: dotnet test --no-build -c Release
+
+      # --- Node.js / TypeScript ---
+      # - name: 安装 pnpm
+      #   uses: pnpm/action-setup@v4
+      #   with:
+      #     version: 9
+      # - name: 安装 Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '22'
+      #     cache: pnpm
+      # - name: 安装依赖
+      #   run: pnpm install --frozen-lockfile
+      # - name: 检查与测试
+      #   run: |
+      #     pnpm lint
+      #     pnpm test
+      #     pnpm build
+
+      # --- Python ---
+      # - name: 安装 Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.12'
+      # - name: 安装依赖
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install -r requirements-dev.txt
+      # - name: 测试
+      #   run: pytest -q
+
+      - name: 待配置：构建与测试
+        run: |
+          echo "本项目尚未配置技术栈的构建命令。"
+          echo "请编辑 .github/workflows/ci.yml，将本步骤替换为真实的构建与测试命令。"
