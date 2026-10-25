@@ -1,0 +1,4130 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NLNav 导航仿真</title>
+    <style>
+      /* =====================================================================
+ * 设计令牌：参考 Apple Human Interface 的配色、圆角、阴影与动效
+ * ===================================================================== */
+      :root {
+        --bg: #f5f5f7;
+        --surface: rgba(255, 255, 255, 0.86);
+        --surface-solid: #ffffff;
+        --fill: rgba(118, 118, 128, 0.12);
+        --fill-2: rgba(118, 118, 128, 0.08);
+        --separator: rgba(60, 60, 67, 0.12);
+        --text: #1d1d1f;
+        --text-2: #6e6e73;
+        --text-3: #a1a1a6;
+        --accent: #0071e3;
+        --accent-hover: #0077ed;
+        --accent-soft: rgba(0, 113, 227, 0.1);
+        --green: #34c759;
+        --green-soft: rgba(52, 199, 89, 0.12);
+        --orange: #ff9f0a;
+        --orange-soft: rgba(255, 159, 10, 0.14);
+        --red: #ff3b30;
+        --red-soft: rgba(255, 59, 48, 0.1);
+        --blue: #007aff;
+        --blue-soft: rgba(0, 122, 255, 0.1);
+        --font:
+          -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'PingFang SC', 'Helvetica Neue',
+          'Microsoft YaHei', sans-serif;
+        --mono: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+        --r-sm: 10px;
+        --r-md: 14px;
+        --r-lg: 20px;
+        --r-xl: 24px;
+        --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
+        --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.05), 0 16px 40px rgba(0, 0, 0, 0.07);
+        --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+        --spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.47 var(--font);
+        letter-spacing: -0.01em;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      :focus-visible {
+        outline: 3px solid rgba(0, 113, 227, 0.45);
+        outline-offset: 2px;
+        border-radius: 8px;
+      }
+      svg.icon {
+        width: 16px;
+        height: 16px;
+        flex: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      /* ---------- 顶栏：毛玻璃 ---------- */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        height: 56px;
+        padding: 0 24px;
+        background: rgba(251, 251, 253, 0.72);
+        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        border-bottom: 0.5px solid var(--separator);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 17px;
+        letter-spacing: -0.022em;
+      }
+      .brand-mark {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: linear-gradient(145deg, #2997ff, #5e5ce6);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 2px 6px rgba(41, 151, 255, 0.35);
+      }
+      .brand-mark svg {
+        width: 16px;
+        height: 16px;
+        stroke: #fff;
+        stroke-width: 2;
+        fill: none;
+      }
+      .brand-sub {
+        color: var(--text-2);
+        font-size: 13px;
+        font-weight: 400;
+      }
+      .spacer {
+        flex: 1;
+      }
+      .select {
+        appearance: none;
+        -webkit-appearance: none;
+        border: none;
+        outline: none;
+        background: var(--fill)
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236e6e73' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")
+          no-repeat right 12px center;
+        border-radius: 999px;
+        padding: 7px 32px 7px 14px;
+        font: 500 13px var(--font);
+        color: var(--text);
+        cursor: pointer;
+        transition: background-color 0.2s var(--ease);
+      }
+      .select:hover {
+        background-color: rgba(118, 118, 128, 0.18);
+      }
+
+      /* ---------- 布局 ---------- */
+      .main {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr) 380px;
+        gap: 20px;
+        padding: 20px 24px 32px;
+        align-items: start;
+        max-width: 1680px;
+        margin: 0 auto;
+      }
+      @media (max-width: 1320px) {
+        .main {
+          grid-template-columns: 290px minmax(0, 1fr);
+        }
+        .inspector {
+          grid-column: 1 / -1;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+        .inspector .card + .card {
+          margin-top: 0;
+        }
+      }
+      @media (max-width: 900px) {
+        .main {
+          grid-template-columns: 1fr;
+          padding: 16px;
+        }
+        .inspector {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--surface);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-1);
+        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        transition: box-shadow 0.3s var(--ease);
+      }
+      .card + .card {
+        margin-top: 16px;
+      }
+      .card-h {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 18px 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+      .card-h .step {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .card-h .sub {
+        color: var(--text-3);
+        font-weight: 400;
+        font-size: 12px;
+      }
+      .card-b {
+        padding: 0 18px 18px;
+      }
+
+      /* ---------- 输入 ---------- */
+      .input-wrap {
+        position: relative;
+        background: var(--fill-2);
+        border-radius: var(--r-md);
+        transition:
+          background-color 0.2s var(--ease),
+          box-shadow 0.2s var(--ease);
+      }
+      .input-wrap:focus-within {
+        background: var(--surface-solid);
+        box-shadow:
+          0 0 0 4px rgba(0, 113, 227, 0.18),
+          inset 0 0 0 1px rgba(0, 113, 227, 0.5);
+      }
+      textarea {
+        width: 100%;
+        resize: none;
+        border: none;
+        background: transparent;
+        outline: none;
+        padding: 12px 14px 26px;
+        font: 15px/1.5 var(--font);
+        color: var(--text);
+        min-height: 76px;
+        display: block;
+      }
+      textarea::placeholder {
+        color: var(--text-3);
+      }
+      .counter {
+        position: absolute;
+        right: 12px;
+        bottom: 7px;
+        font-size: 11px;
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .hint {
+        color: var(--text-3);
+        font-size: 12px;
+      }
+
+      /* ---------- 按钮 ---------- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: none;
+        border-radius: 999px;
+        padding: 7px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        background: var(--fill);
+        color: var(--text);
+        transition:
+          background-color 0.2s var(--ease),
+          transform 0.15s var(--ease),
+          opacity 0.2s var(--ease),
+          box-shadow 0.2s var(--ease);
+      }
+      .btn:hover {
+        background: rgba(118, 118, 128, 0.18);
+      }
+      .btn:active {
+        transform: scale(0.96);
+      }
+      .btn.primary {
+        background: var(--accent);
+        color: #fff;
+        padding: 8px 20px;
+        box-shadow: 0 1px 2px rgba(0, 113, 227, 0.3);
+      }
+      .btn.primary:hover {
+        background: var(--accent-hover);
+      }
+      .btn.round {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+      }
+      .btn.round.lg {
+        width: 44px;
+        height: 44px;
+      }
+      .btn.round.lg svg.icon {
+        width: 18px;
+        height: 18px;
+      }
+      .btn.filled {
+        background: var(--text);
+        color: #fff;
+      }
+      .btn.filled:hover {
+        background: #3a3a3c;
+      }
+      .btn.small {
+        padding: 4px 11px;
+        font-size: 12px;
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--accent);
+      }
+      .btn.ghost:hover {
+        background: var(--accent-soft);
+      }
+      .btn:disabled {
+        opacity: 0.38;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .btn.listening {
+        background: var(--red);
+        color: #fff;
+        animation: breathe 2s var(--ease) infinite;
+      }
+
+      /* ---------- 预设 chips ---------- */
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: none;
+        border-radius: 999px;
+        background: var(--fill-2);
+        padding: 6px 12px 6px 10px;
+        font-size: 12.5px;
+        color: var(--text);
+        transition:
+          background-color 0.2s var(--ease),
+          transform 0.15s var(--ease),
+          box-shadow 0.2s var(--ease);
+      }
+      .chip:hover {
+        background: var(--surface-solid);
+        box-shadow:
+          var(--shadow-1),
+          inset 0 0 0 0.5px var(--separator);
+      }
+      .chip:active {
+        transform: scale(0.96);
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .dot.success {
+        background: var(--green);
+      }
+      .dot.clarification {
+        background: var(--blue);
+      }
+      .dot.unreachable {
+        background: var(--red);
+      }
+      .dot.failed {
+        background: var(--text-3);
+      }
+      .legend {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+        font-size: 11.5px;
+        color: var(--text-2);
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      /* ---------- 列表（iOS 分组列表） ---------- */
+      .list {
+        background: var(--fill-2);
+        border-radius: var(--r-md);
+        overflow: hidden;
+      }
+      .list-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 12px;
+        font-size: 13px;
+        position: relative;
+      }
+      .list-item + .list-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 32px;
+        right: 0;
+        height: 0.5px;
+        background: var(--separator);
+      }
+      .list-item .sw {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex: none;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+      }
+      .list-item .grow {
+        flex: 1;
+        min-width: 0;
+      }
+      .list-item .coord {
+        font: 11px var(--mono);
+        color: var(--text-3);
+        margin-left: 4px;
+      }
+      .list-item .state {
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      .list-item .state.on {
+        color: var(--red);
+      }
+      .link {
+        border: none;
+        background: none;
+        color: var(--accent);
+        font-size: 12px;
+        padding: 2px 4px;
+        border-radius: 6px;
+        transition: background-color 0.2s var(--ease);
+      }
+      .link:hover {
+        background: var(--accent-soft);
+      }
+
+      /* iOS 开关 */
+      .switch {
+        position: relative;
+        width: 42px;
+        height: 26px;
+        border-radius: 999px;
+        border: none;
+        padding: 0;
+        background: rgba(120, 120, 128, 0.16);
+        flex: none;
+        transition: background-color 0.25s var(--ease);
+      }
+      .switch::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow:
+          0 3px 8px rgba(0, 0, 0, 0.15),
+          0 1px 1px rgba(0, 0, 0, 0.16);
+        transition: transform 0.3s var(--spring);
+      }
+      .switch.on {
+        background: var(--red);
+      }
+      .switch.on::after {
+        transform: translateX(16px);
+      }
+
+      /* ---------- 地图卡片 ---------- */
+      .map-card {
+        padding: 16px;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+      .seg {
+        position: relative;
+        display: inline-flex;
+        background: var(--fill);
+        border-radius: 10px;
+        padding: 2px;
+      }
+      .seg-thumb {
+        position: absolute;
+        top: 2px;
+        bottom: 2px;
+        left: 2px;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow:
+          0 3px 8px rgba(0, 0, 0, 0.12),
+          0 3px 1px rgba(0, 0, 0, 0.04);
+        transition:
+          transform 0.35s var(--spring),
+          width 0.35s var(--spring);
+      }
+      .seg button {
+        position: relative;
+        z-index: 1;
+        border: none;
+        background: transparent;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-2);
+        border-radius: 8px;
+        transition: color 0.2s var(--ease);
+      }
+      .seg button.active {
+        color: var(--text);
+      }
+      .check {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-2);
+        cursor: pointer;
+        user-select: none;
+      }
+      .check input {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        border-radius: 6px;
+        background: var(--fill);
+        display: grid;
+        place-items: center;
+        transition: background-color 0.2s var(--ease);
+        cursor: pointer;
+      }
+      .check input:checked {
+        background: var(--accent);
+      }
+      .check input:checked::after {
+        content: '';
+        width: 9px;
+        height: 5px;
+        border-left: 2px solid #fff;
+        border-bottom: 2px solid #fff;
+        transform: translateY(-1px) rotate(-45deg);
+      }
+      .map-wrap {
+        position: relative;
+        border-radius: var(--r-md);
+        background: linear-gradient(180deg, #f0f1f4, #e8eaef);
+        padding: 14px;
+        overflow: hidden;
+      }
+      svg.map {
+        display: block;
+        width: 100%;
+        height: auto;
+        user-select: none;
+        touch-action: none;
+      }
+      svg.map.mode-place,
+      svg.map.mode-edit {
+        cursor: crosshair;
+      }
+      .tooltip {
+        position: absolute;
+        pointer-events: none;
+        z-index: 5;
+        display: none;
+        white-space: nowrap;
+        background: rgba(29, 29, 31, 0.82);
+        color: #fff;
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 10px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        transform: translate(14px, 14px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+      }
+      .playback {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .progress {
+        flex: 1;
+        min-width: 140px;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--fill);
+        overflow: hidden;
+      }
+      .progress > div {
+        height: 100%;
+        width: 0;
+        border-radius: inherit;
+        background: var(--accent);
+        transition: width 0.15s linear;
+      }
+      .speed {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-2);
+      }
+      input[type='range'] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 110px;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--fill);
+        outline: none;
+      }
+      input[type='range']::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow:
+          0 2px 6px rgba(0, 0, 0, 0.2),
+          0 0 0 0.5px rgba(0, 0, 0, 0.06);
+        cursor: pointer;
+        transition: transform 0.2s var(--spring);
+      }
+      input[type='range']::-webkit-slider-thumb:active {
+        transform: scale(1.12);
+      }
+      input[type='range']::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border: none;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+      }
+      .mono {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        font-variant-numeric: tabular-nums;
+      }
+      .shortcuts {
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-3);
+        line-height: 1.8;
+      }
+      kbd {
+        font: 500 11px var(--font);
+        background: var(--surface-solid);
+        border-radius: 5px;
+        padding: 1px 6px;
+        box-shadow:
+          0 0 0 0.5px var(--separator),
+          0 1px 0 rgba(0, 0, 0, 0.08);
+        color: var(--text-2);
+      }
+
+      /* ---------- 结果横幅 ---------- */
+      .banner {
+        display: flex;
+        gap: 10px;
+        border-radius: var(--r-md);
+        padding: 12px 14px;
+        margin-bottom: 14px;
+        font-size: 13px;
+        color: var(--text);
+        animation: rise 0.35s var(--ease);
+      }
+      .banner .ic {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        flex: none;
+        color: #fff;
+        margin-top: 1px;
+      }
+      .banner .ic svg {
+        width: 13px;
+        height: 13px;
+        stroke: #fff;
+        stroke-width: 2.4;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .banner .t {
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      .banner .d {
+        color: var(--text-2);
+      }
+      .banner.success {
+        background: var(--green-soft);
+      }
+      .banner.success .ic {
+        background: var(--green);
+      }
+      .banner.info,
+      .banner.clarification {
+        background: var(--blue-soft);
+      }
+      .banner.info .ic,
+      .banner.clarification .ic {
+        background: var(--blue);
+      }
+      .banner.unreachable,
+      .banner.failed,
+      .banner.error {
+        background: var(--red-soft);
+      }
+      .banner.unreachable .ic,
+      .banner.failed .ic,
+      .banner.error .ic {
+        background: var(--red);
+      }
+      .banner .chips {
+        margin-top: 10px;
+      }
+      .banner .chip {
+        background: rgba(255, 255, 255, 0.85);
+        box-shadow: 0 0 0 0.5px var(--separator);
+      }
+      .banner .chip:hover {
+        background: #fff;
+        box-shadow: var(--shadow-1);
+      }
+
+      /* ---------- 流水线卡片 ---------- */
+      .stage {
+        background: var(--fill-2);
+        border-radius: var(--r-md);
+        margin-bottom: 10px;
+        overflow: hidden;
+        transition: background-color 0.3s var(--ease);
+      }
+      .stage-h {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 12px;
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .stage-h .n {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(120, 120, 128, 0.32);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        transition: background-color 0.3s var(--ease);
+      }
+      .stage-h .grow {
+        flex: 1;
+      }
+      .stage-h .ms {
+        font: 11px var(--mono);
+        color: var(--text-3);
+        font-weight: 400;
+      }
+      .pill {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+      .pill.ok {
+        background: var(--green-soft);
+        color: #248a3d;
+      }
+      .pill.error {
+        background: var(--red-soft);
+        color: #d70015;
+      }
+      .pill.skipped {
+        background: var(--fill);
+        color: var(--text-3);
+      }
+      .pill.running {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+      .stage.ok .n {
+        background: var(--green);
+      }
+      .stage.error .n {
+        background: var(--red);
+      }
+      .stage.running .n {
+        background: var(--blue);
+      }
+      .stage-b {
+        padding: 0 12px 12px;
+        font-size: 12.5px;
+      }
+      .stage-b .empty {
+        color: var(--text-3);
+      }
+      .kv {
+        display: grid;
+        grid-template-columns: 64px 1fr;
+        gap: 5px 10px;
+      }
+      .kv .k {
+        color: var(--text-3);
+      }
+      .norm {
+        font-size: 14px;
+        padding: 8px 10px;
+        background: var(--surface-solid);
+        border-radius: 10px;
+        margin: 6px 0 8px;
+        word-break: break-all;
+        box-shadow: 0 0 0 0.5px var(--separator);
+      }
+      .norm mark {
+        border-radius: 5px;
+        padding: 1px 3px;
+      }
+      .norm mark.start {
+        background: rgba(52, 199, 89, 0.18);
+        color: #1d7a35;
+      }
+      .norm mark.goal {
+        background: rgba(0, 113, 227, 0.14);
+        color: #0058b0;
+      }
+      .tokens {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 6px;
+      }
+      .tok {
+        font: 11px var(--mono);
+        border-radius: 6px;
+        padding: 2px 6px;
+        background: var(--surface-solid);
+        color: var(--text-2);
+        box-shadow: 0 0 0 0.5px var(--separator);
+      }
+      .tok b {
+        color: var(--accent);
+        font-weight: 600;
+        margin-right: 4px;
+      }
+      details summary {
+        cursor: pointer;
+        list-style: none;
+      }
+      details summary::-webkit-details-marker {
+        display: none;
+      }
+      details summary::before {
+        content: '›';
+        display: inline-block;
+        margin-right: 4px;
+        transition: transform 0.2s var(--ease);
+      }
+      details[open] summary::before {
+        transform: rotate(90deg);
+      }
+      table.g {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      table.g th {
+        text-align: left;
+        color: var(--text-3);
+        font-weight: 500;
+        padding: 4px;
+        font-size: 11.5px;
+      }
+      table.g td {
+        padding: 6px 4px;
+        border-top: 0.5px solid var(--separator);
+        vertical-align: top;
+      }
+      .tag {
+        font-size: 11px;
+        border-radius: 6px;
+        padding: 1px 6px;
+        background: var(--fill);
+        color: var(--text-2);
+        white-space: nowrap;
+      }
+      .tag.fuzzy,
+      .tag.nearest {
+        background: var(--orange-soft);
+        color: #c67c00;
+      }
+      .tag.clarified {
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+      .notes {
+        margin: 8px 0 0;
+        padding-left: 16px;
+        color: var(--text-2);
+      }
+      .err-title {
+        color: #d70015;
+        font-weight: 600;
+      }
+      .err-detail {
+        color: var(--text-2);
+        margin-top: 2px;
+      }
+      .seg-sw {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 4px;
+        vertical-align: 1px;
+      }
+
+      /* ---------- 事件日志 ---------- */
+      .log {
+        max-height: 220px;
+        overflow: auto;
+        font-size: 12.5px;
+      }
+      .log-item {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        padding: 6px 0;
+        border-top: 0.5px solid var(--separator);
+        animation: rise 0.3s var(--ease);
+      }
+      .log-item:first-child {
+        border-top: none;
+      }
+      .log-item .time {
+        font: 11px var(--mono);
+        color: var(--text-3);
+        flex: none;
+        width: 38px;
+      }
+      .log-item .dot {
+        transform: translateY(-1px);
+      }
+
+      /* ---------- Toast：顶部胶囊 ---------- */
+      .toast {
+        position: fixed;
+        left: 50%;
+        top: 68px;
+        z-index: 40;
+        pointer-events: none;
+        transform: translate(-50%, -12px) scale(0.96);
+        opacity: 0;
+        background: rgba(29, 29, 31, 0.86);
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 500;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        transition:
+          opacity 0.3s var(--ease),
+          transform 0.4s var(--spring);
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+      }
+
+      /* ---------- 动画（全部低频、柔和） ---------- */
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes breathe {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.35);
+        }
+        50% {
+          box-shadow: 0 0 0 7px rgba(255, 59, 48, 0);
+        }
+      }
+      @keyframes flow {
+        to {
+          stroke-dashoffset: -36;
+        }
+      }
+      @keyframes halo {
+        0% {
+          r: 14;
+          opacity: 0.32;
+        }
+        100% {
+          r: 22;
+          opacity: 0;
+        }
+      }
+      @keyframes drawIn {
+        from {
+          stroke-dashoffset: var(--len);
+        }
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .path-flow {
+        animation: flow 4s linear infinite;
+      }
+      .path-draw {
+        animation: drawIn 0.9s var(--ease) both;
+      }
+      .fade-in {
+        animation: fadeIn 0.6s var(--ease) both;
+      }
+      .robot-halo {
+        animation: halo 2.6s var(--ease) infinite;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .path-flow,
+        .robot-halo,
+        .path-draw,
+        .fade-in,
+        .banner,
+        .log-item {
+          animation: none !important;
+        }
+        .seg-thumb,
+        .switch::after,
+        .toast {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="brand-mark"
+          ><svg viewBox="0 0 16 16"><path d="M3 12.5 8 3l5 9.5-5-2.5z" stroke-linejoin="round" /></svg
+        ></span>
+        NLNav
+        <span class="brand-sub">自然语言导航仿真</span>
+      </div>
+      <span class="spacer"></span>
+      <select class="select" id="mapSelect" data-testid="map-select" aria-label="选择地图"></select>
+    </header>
+
+    <div class="main">
+      <aside>
+        <section class="card">
+          <div class="card-h"><span class="step">1</span>输入指令</div>
+          <div class="card-b">
+            <div class="input-wrap">
+              <textarea
+                id="cmd"
+                data-testid="command-input"
+                maxlength="100"
+                placeholder="例如：从入口去工作台B"
+              ></textarea>
+              <span class="counter" id="counter">0/100</span>
+            </div>
+            <div class="row" style="margin-top: 10px">
+              <button
+                class="btn round"
+                id="voiceBtn"
+                title="语音输入（Chrome / Edge）"
+                aria-label="语音输入"
+              ></button>
+              <span class="hint" id="voiceHint">回车执行 · ↑↓ 历史</span>
+              <span class="spacer"></span>
+              <button class="btn primary" id="runBtn" data-testid="command-submit">执行</button>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-h">预设指令<span class="sub">点一下即可演示</span></div>
+          <div class="card-b">
+            <div class="chips" id="presets"></div>
+            <div class="legend">
+              <span><i class="dot success"></i>可达</span><span><i class="dot clarification"></i>需澄清</span
+              ><span><i class="dot unreachable"></i>不可达</span>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-h">通道<span class="sub">打开开关 = 封闭</span></div>
+          <div class="card-b"><div class="list" id="passages"></div></div>
+        </section>
+        <section class="card">
+          <div class="card-h">地点</div>
+          <div class="card-b"><div class="list" id="locations"></div></div>
+        </section>
+      </aside>
+
+      <section class="card map-card">
+        <div class="toolbar">
+          <div class="seg" id="modeSeg" role="tablist" aria-label="交互模式">
+            <span class="seg-thumb" id="segThumb"></span>
+            <button data-mode="view" class="active">浏览</button>
+            <button data-mode="place">放置机器人</button>
+            <button data-mode="edit">编辑障碍</button>
+          </div>
+          <label class="check"><input type="checkbox" id="showExplored" />搜索区域</label>
+          <label class="check"><input type="checkbox" id="showCoords" />坐标</label>
+          <span class="spacer"></span>
+          <button class="btn small" id="clearObs">清除障碍修改</button>
+          <button class="btn small" id="removeRobot">移除机器人</button>
+        </div>
+        <div class="map-wrap" id="mapWrap">
+          <svg class="map" id="map" data-testid="map-canvas" role="img" aria-label="导航地图"></svg>
+          <div class="tooltip" id="tooltip"></div>
+        </div>
+        <div class="playback">
+          <button
+            class="btn round lg filled"
+            id="playBtn"
+            data-testid="play"
+            title="播放 / 暂停（空格）"
+            aria-label="播放或暂停"
+          ></button>
+          <button class="btn round" id="stepBtn" title="单步（.）" aria-label="单步"></button>
+          <button class="btn round" id="resetBtn" title="回到起点重新播放（R）" aria-label="重置"></button>
+          <button class="btn small" id="retryBtn" style="display: none">重新规划</button>
+          <div class="progress"><div id="progressBar"></div></div>
+          <div class="speed">
+            速度<input
+              type="range"
+              id="speed"
+              min="0.5"
+              max="12"
+              step="0.5"
+              value="4"
+              aria-label="速度"
+            /><span class="mono" id="speedLabel">4 格/秒</span>
+          </div>
+        </div>
+        <div class="shortcuts">
+          <kbd>空格</kbd> 播放/暂停　<kbd>.</kbd> 单步　<kbd>R</kbd> 重置　<kbd>/</kbd>
+          输入指令　·　运行中切到“编辑障碍”并点击路线前方，可演示动态重规划
+        </div>
+      </section>
+
+      <aside class="inspector">
+        <section class="card">
+          <div class="card-h">
+            处理流水线<span class="spacer"></span
+            ><button class="btn ghost small" id="copyBtn">复制调试信息</button>
+          </div>
+          <div class="card-b">
+            <div id="banner" aria-live="polite"></div>
+            <div id="stages"></div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-h">事件</div>
+          <div class="card-b"><div class="log" id="log" data-testid="event-log"></div></div>
+        </section>
+      </aside>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+
+    <script>
+      'use strict';
+      /* =====================================================================
+       * 1. 地图数据（与 docs/03-maps.md 一致）
+       * ===================================================================== */
+      const MAPS = [
+        {
+          id: 'office',
+          name: '小型办公区',
+          width: 20,
+          height: 12,
+          defaultStart: 'entrance',
+          grid: [
+            '####################',
+            '#.........#........#',
+            '#..................#',
+            '#.........#.SSS....#',
+            '#....TTT..#.SSS....#',
+            '#.........#........#',
+            '#.SS...............#',
+            '#.SS...............#',
+            '#...TTTT..#..TTT...#',
+            '#.........#........#',
+            '#.........#........#',
+            '####################',
+          ],
+          locations: [
+            {
+              id: 'entrance',
+              name: '入口',
+              aliases: ['门口', '大门', '进门处'],
+              category: 'entrance',
+              anchor: { x: 1, y: 9 },
+              area: { x: 1, y: 8, w: 2, h: 3 },
+            },
+            {
+              id: 'rest-area',
+              name: '休息区',
+              aliases: ['休息室', '茶水间'],
+              category: 'rest',
+              anchor: { x: 2, y: 2 },
+              area: { x: 1, y: 1, w: 3, h: 3 },
+            },
+            {
+              id: 'workbench-a',
+              name: '工作台A',
+              aliases: ['A号工作台', '1号工作台', 'A工作台', '装配台'],
+              category: 'workbench',
+              anchor: { x: 6, y: 5 },
+              area: { x: 5, y: 4, w: 3, h: 2 },
+            },
+            {
+              id: 'workbench-b',
+              name: '工作台B',
+              aliases: ['B号工作台', '2号工作台', 'B工作台', '检测台'],
+              category: 'workbench',
+              anchor: { x: 14, y: 9 },
+              area: { x: 13, y: 8, w: 3, h: 2 },
+            },
+            {
+              id: 'charging',
+              name: '充电区',
+              aliases: ['充电站', '充电桩', '充电处'],
+              category: 'charging',
+              anchor: { x: 17, y: 2 },
+              area: { x: 16, y: 1, w: 3, h: 2 },
+            },
+            {
+              id: 'storage',
+              name: '仓库',
+              aliases: ['库房', '储物间'],
+              category: 'storage',
+              anchor: { x: 17, y: 6 },
+              area: { x: 16, y: 5, w: 3, h: 3 },
+            },
+          ],
+          passages: [
+            { id: 'north-door', name: '北门', cells: [{ x: 10, y: 2 }] },
+            {
+              id: 'central-corridor',
+              name: '中央通道',
+              cells: [
+                { x: 10, y: 6 },
+                { x: 10, y: 7 },
+              ],
+            },
+          ],
+          presets: [
+            {
+              label: '跨区导航',
+              text: '从入口去工作台B',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 17 },
+            },
+            {
+              label: '隐式起点',
+              text: '去充电区',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 23 },
+            },
+            {
+              label: '名称不明确',
+              text: '从入口去工作台',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'clarification' },
+            },
+            {
+              label: '未知地点',
+              text: '去会议室',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'clarification' },
+            },
+            {
+              label: '多目标巡检',
+              text: '先去工作台A，再去充电区，最后回到入口',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 46 },
+            },
+            {
+              label: '绕行北门',
+              text: '从入口去工作台B',
+              setup: { robotAt: 'entrance', closedPassages: ['central-corridor'] },
+              expect: { outcome: 'success', steps: 27 },
+            },
+            {
+              label: '通道全封闭',
+              text: '从入口去工作台B',
+              setup: { robotAt: 'entrance', closedPassages: ['central-corridor', 'north-door'] },
+              expect: { outcome: 'unreachable' },
+            },
+            {
+              label: '某地到某地',
+              text: '休息区到仓库',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 19 },
+            },
+          ],
+        },
+        {
+          id: 'warehouse',
+          name: '仓储车间',
+          width: 24,
+          height: 14,
+          defaultStart: 'entrance',
+          grid: [
+            '########################',
+            '#.................#....#',
+            '#...SS..SS..SS....#....#',
+            '#...SS..SS..SS....#....#',
+            '#...SS..SS..SS.TT.#....#',
+            '#...SS..SS..SS....#....#',
+            '#......................#',
+            '#......................#',
+            '#...SS..SS..SS....#....#',
+            '#...SS..SS..SS....#....#',
+            '#...SS..SS..SS....#....#',
+            '#...SS..SS..SS....#....#',
+            '#.................#....#',
+            '########################',
+          ],
+          locations: [
+            {
+              id: 'entrance',
+              name: '入口',
+              aliases: ['大门', '门口'],
+              category: 'entrance',
+              anchor: { x: 1, y: 6 },
+              area: { x: 1, y: 6, w: 2, h: 2 },
+            },
+            {
+              id: 'charger-1',
+              name: '充电桩1',
+              aliases: ['1号充电桩', '左上充电桩'],
+              category: 'charging',
+              anchor: { x: 1, y: 2 },
+              area: { x: 1, y: 1, w: 2, h: 2 },
+            },
+            {
+              id: 'charger-2',
+              name: '充电桩2',
+              aliases: ['2号充电桩', '右下充电桩'],
+              category: 'charging',
+              anchor: { x: 16, y: 12 },
+              area: { x: 15, y: 11, w: 3, h: 2 },
+            },
+            {
+              id: 'packing',
+              name: '打包台',
+              aliases: ['包装台', '打包区'],
+              category: 'workbench',
+              anchor: { x: 15, y: 5 },
+              area: { x: 15, y: 4, w: 2, h: 2 },
+            },
+            {
+              id: 'office',
+              name: '办公室',
+              aliases: ['值班室'],
+              category: 'office',
+              anchor: { x: 16, y: 2 },
+              area: { x: 15, y: 1, w: 3, h: 2 },
+            },
+            {
+              id: 'dock',
+              name: '装卸区',
+              aliases: ['卸货区', '月台', '码头'],
+              category: 'dock',
+              anchor: { x: 20, y: 7 },
+              area: { x: 19, y: 4, w: 4, h: 6 },
+            },
+            {
+              id: 'shelves',
+              name: '货架区',
+              aliases: ['货架', '存储区'],
+              category: 'storage',
+              anchor: { x: 7, y: 7 },
+              area: { x: 4, y: 2, w: 10, h: 10 },
+            },
+          ],
+          passages: [
+            {
+              id: 'main-aisle',
+              name: '主通道',
+              cells: [4, 5, 8, 9, 12, 13].flatMap((x) => [
+                { x, y: 6 },
+                { x, y: 7 },
+              ]),
+            },
+            {
+              id: 'rolling-door',
+              name: '卷帘门',
+              cells: [
+                { x: 18, y: 6 },
+                { x: 18, y: 7 },
+              ],
+            },
+          ],
+          presets: [
+            {
+              label: '穿越主通道',
+              text: '从入口去装卸区',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 20 },
+            },
+            {
+              label: '最近的充电桩',
+              text: '去最近的充电桩',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 4 },
+            },
+            {
+              label: '就近原则',
+              text: '从装卸区去最近的充电桩',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 9 },
+            },
+            {
+              label: '名称不明确',
+              text: '去充电桩',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'clarification' },
+            },
+            {
+              label: '主通道施工',
+              text: '从入口去装卸区',
+              setup: { robotAt: 'entrance', closedPassages: ['main-aisle'] },
+              expect: { outcome: 'success', steps: 30 },
+            },
+            {
+              label: '卷帘门关闭',
+              text: '从入口去装卸区',
+              setup: { robotAt: 'entrance', closedPassages: ['rolling-door'] },
+              expect: { outcome: 'unreachable' },
+            },
+            {
+              label: '未知地点',
+              text: '去冷库',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'clarification' },
+            },
+          ],
+        },
+        {
+          id: 'lab',
+          name: '实验楼',
+          width: 18,
+          height: 14,
+          defaultStart: 'entrance',
+          grid: [
+            '##################',
+            '#.....#.....#....#',
+            '#.TTT.#.TTT.#..TT#',
+            '#.....#.....#....#',
+            '#.....#.....#....#',
+            '###.#####.####.###',
+            '#................#',
+            '#................#',
+            '###.#####.####.###',
+            '#.....#.....#....#',
+            '#.....#.M.M.#....#',
+            '#.....#.....#....#',
+            '#.....#.....#....#',
+            '##################',
+          ],
+          locations: [
+            {
+              id: 'entrance',
+              name: '入口',
+              aliases: ['大厅', '入口大厅', '门厅'],
+              category: 'entrance',
+              anchor: { x: 3, y: 11 },
+              area: { x: 1, y: 9, w: 5, h: 4 },
+            },
+            {
+              id: 'lab-1',
+              name: '实验室1',
+              aliases: ['1号实验室', '化学实验室'],
+              category: 'lab',
+              anchor: { x: 3, y: 3 },
+              area: { x: 1, y: 1, w: 5, h: 4 },
+            },
+            {
+              id: 'lab-2',
+              name: '实验室2',
+              aliases: ['2号实验室', '物理实验室'],
+              category: 'lab',
+              anchor: { x: 9, y: 3 },
+              area: { x: 7, y: 1, w: 5, h: 4 },
+            },
+            {
+              id: 'office',
+              name: '办公室',
+              aliases: ['主任办公室'],
+              category: 'office',
+              anchor: { x: 14, y: 3 },
+              area: { x: 13, y: 1, w: 4, h: 4 },
+            },
+            {
+              id: 'equipment',
+              name: '设备间',
+              aliases: ['机房', '设备室'],
+              category: 'equipment',
+              anchor: { x: 9, y: 10 },
+              area: { x: 7, y: 9, w: 5, h: 4 },
+            },
+            {
+              id: 'charging',
+              name: '充电区',
+              aliases: ['充电站', '充电桩'],
+              category: 'charging',
+              anchor: { x: 14, y: 10 },
+              area: { x: 13, y: 9, w: 4, h: 4 },
+            },
+            {
+              id: 'corridor',
+              name: '走廊',
+              aliases: ['过道', '中间走廊'],
+              category: 'corridor',
+              anchor: { x: 8, y: 6 },
+              area: { x: 1, y: 6, w: 16, h: 2 },
+            },
+          ],
+          passages: [
+            { id: 'door-lab1', name: '实验室1门', cells: [{ x: 3, y: 5 }] },
+            { id: 'door-lab2', name: '实验室2门', cells: [{ x: 9, y: 5 }] },
+            { id: 'door-office', name: '办公室门', cells: [{ x: 14, y: 5 }] },
+            { id: 'door-hall', name: '大厅门', cells: [{ x: 3, y: 8 }] },
+            { id: 'door-equipment', name: '设备间门', cells: [{ x: 9, y: 8 }], defaultClosed: true },
+            { id: 'door-charging', name: '充电区门', cells: [{ x: 14, y: 8 }] },
+          ],
+          presets: [
+            {
+              label: '穿越走廊',
+              text: '从入口去实验室2',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 14 },
+            },
+            {
+              label: '门禁关闭',
+              text: '去设备间',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'unreachable' },
+            },
+            {
+              label: '开门后可达',
+              text: '去设备间',
+              setup: { robotAt: 'entrance', closedPassages: [] },
+              expect: { outcome: 'success', steps: 13 },
+            },
+            {
+              label: '名称不明确',
+              text: '去实验室',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'clarification' },
+            },
+            {
+              label: '最近的实验室',
+              text: '去最近的实验室',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 8 },
+            },
+            {
+              label: '多目标巡检',
+              text: '先去办公室，然后去实验室1，最后回到入口',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'success', steps: 44 },
+            },
+            {
+              label: '未知地点',
+              text: '去图书馆',
+              setup: { robotAt: 'entrance' },
+              expect: { outcome: 'clarification' },
+            },
+          ],
+        },
+      ];
+      /* 类别色取自 Apple 系统色 */
+      const CATEGORY = {
+        entrance: { label: '入口', color: '#34c759' },
+        workbench: { label: '工作台', color: '#af52de' },
+        charging: { label: '充电', color: '#32ade6' },
+        storage: { label: '仓储', color: '#ff9f0a' },
+        rest: { label: '休息', color: '#ff2d55' },
+        office: { label: '办公', color: '#007aff' },
+        dock: { label: '装卸', color: '#a2845e' },
+        lab: { label: '实验室', color: '#00c7be' },
+        equipment: { label: '设备', color: '#8e8e93' },
+        corridor: { label: '走廊', color: '#aeaeb2' },
+        other: { label: '其他', color: '#8e8e93' },
+      };
+      const SEGMENT_COLORS = [
+        '#0071e3',
+        '#5e5ce6',
+        '#ff375f',
+        '#ff9f0a',
+        '#30d158',
+        '#bf5af2',
+        '#64d2ff',
+        '#ac8e68',
+      ];
+      const STATUS_COLOR = {
+        idle: '#0071e3',
+        ready: '#0071e3',
+        running: '#0071e3',
+        dwelling: '#5e5ce6',
+        paused: '#ff9f0a',
+        arrived: '#30d158',
+        blocked: '#ff3b30',
+      };
+      const LIMITS = { MAX_INPUT_LENGTH: 100, MAX_WAYPOINTS: 8, REGION_EXPORT_LIMIT: 2000 };
+      const TURN_EPSILON = 1e-4;
+      const DWELL_MS = 500;
+
+      /* =====================================================================
+       * 2. 几何与网格
+       * ===================================================================== */
+      const key = (c) => `${c.x},${c.y}`;
+      const parseKey = (k) => {
+        const i = k.indexOf(',');
+        return { x: +k.slice(0, i), y: +k.slice(i + 1) };
+      };
+      const eq = (a, b) => a.x === b.x && a.y === b.y;
+      const manhattan = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+      const fmt = (c) => `(${c.x}, ${c.y})`;
+      const rectHas = (r, c) => c.x >= r.x && c.x < r.x + r.w && c.y >= r.y && c.y < r.y + r.h;
+      const DIRS = [
+        { dx: 0, dy: -1 },
+        { dx: 1, dy: 0 },
+        { dx: 0, dy: 1 },
+        { dx: -1, dy: 0 },
+      ];
+      const TERRAIN = { '.': 'floor', '#': 'wall', T: 'table', S: 'shelf', M: 'machine' };
+      const terrainAt = (map, c) =>
+        c.x < 0 || c.y < 0 || c.x >= map.width || c.y >= map.height
+          ? 'wall'
+          : TERRAIN[map.grid[c.y][c.x]] || 'wall';
+
+      function createGrid(map, overrides = {}) {
+        const w = map.width,
+          h = map.height;
+        const cells = new Uint8Array(w * h);
+        for (let y = 0; y < h; y++)
+          for (let x = 0; x < w; x++) cells[y * w + x] = terrainAt(map, { x, y }) === 'floor' ? 0 : 1;
+        const inB = (c) =>
+          Number.isInteger(c.x) && Number.isInteger(c.y) && c.x >= 0 && c.y >= 0 && c.x < w && c.y < h;
+        const set = (c, v) => {
+          if (inB(c)) cells[c.y * w + c.x] = v;
+        };
+        (overrides.cleared || []).forEach((c) => set(c, 0));
+        const closed = new Set(resolveClosed(map, overrides));
+        map.passages.forEach((p) => {
+          if (closed.has(p.id)) p.cells.forEach((c) => set(c, 1));
+        });
+        (overrides.blocked || []).forEach((c) => set(c, 1));
+        return {
+          width: w,
+          height: h,
+          cells,
+          inBounds: inB,
+          isBlocked: (c) => !inB(c) || cells[c.y * w + c.x] === 1,
+          index: (c) => c.y * w + c.x,
+        };
+      }
+      function resolveClosed(map, overrides = {}) {
+        const ids = overrides.closedPassages ?? map.passages.filter((p) => p.defaultClosed).map((p) => p.id);
+        const known = new Set(map.passages.map((p) => p.id));
+        return [...new Set(ids)].filter((id) => known.has(id));
+      }
+
+      /* =====================================================================
+       * 3. 路径规划：A*（方向扩展状态 + 拐弯微小代价 → 最短且拐弯最少）
+       * ===================================================================== */
+      class MinHeap {
+        constructor() {
+          this.a = [];
+          this.seq = 0;
+        }
+        get size() {
+          return this.a.length;
+        }
+        less(i, j) {
+          const p = this.a[i],
+            q = this.a[j];
+          if (Math.abs(p.f - q.f) > 1e-9) return p.f < q.f;
+          if (p.h !== q.h) return p.h < q.h;
+          return p.s < q.s;
+        }
+        push(item) {
+          item.s = this.seq++;
+          const a = this.a;
+          a.push(item);
+          let i = a.length - 1;
+          while (i > 0) {
+            const pa = (i - 1) >> 1;
+            if (!this.less(i, pa)) break;
+            [a[i], a[pa]] = [a[pa], a[i]];
+            i = pa;
+          }
+        }
+        pop() {
+          const a = this.a;
+          const top = a[0];
+          const last = a.pop();
+          if (a.length) {
+            a[0] = last;
+            let i = 0;
+            for (;;) {
+              const l = 2 * i + 1,
+                r = l + 1;
+              let m = i;
+              if (l < a.length && this.less(l, m)) m = l;
+              if (r < a.length && this.less(r, m)) m = r;
+              if (m === i) break;
+              [a[i], a[m]] = [a[m], a[i]];
+              i = m;
+            }
+          }
+          return top;
+        }
+      }
+      function countTurns(cells) {
+        let t = 0;
+        for (let i = 2; i < cells.length; i++) {
+          const d1 = [cells[i - 1].x - cells[i - 2].x, cells[i - 1].y - cells[i - 2].y],
+            d2 = [cells[i].x - cells[i - 1].x, cells[i].y - cells[i - 1].y];
+          if (d1[0] !== d2[0] || d1[1] !== d2[1]) t++;
+        }
+        return t;
+      }
+      function floodFill(grid, from) {
+        const mask = new Uint8Array(grid.width * grid.height);
+        if (grid.isBlocked(from)) return mask;
+        const q = [from];
+        mask[grid.index(from)] = 1;
+        for (let i = 0; i < q.length; i++)
+          for (const d of DIRS) {
+            const n = { x: q[i].x + d.dx, y: q[i].y + d.dy };
+            if (!grid.isBlocked(n) && !mask[grid.index(n)]) {
+              mask[grid.index(n)] = 1;
+              q.push(n);
+            }
+          }
+        return mask;
+      }
+      function regionInfo(grid, mask) {
+        const cells = [];
+        let n = 0;
+        for (let i = 0; i < mask.length; i++)
+          if (mask[i]) {
+            n++;
+            if (cells.length < LIMITS.REGION_EXPORT_LIMIT)
+              cells.push(`${i % grid.width},${Math.floor(i / grid.width)}`);
+          }
+        return { size: n, cells: n <= LIMITS.REGION_EXPORT_LIMIT ? cells : null };
+      }
+      function findPath(grid, start, goal, goalIndex = 0) {
+        if (!grid.inBounds(start))
+          return {
+            ok: false,
+            error: { code: 'OUT_OF_BOUNDS', stage: 'plan', details: { cell: start, role: 'start' } },
+          };
+        if (!grid.inBounds(goal))
+          return {
+            ok: false,
+            error: { code: 'OUT_OF_BOUNDS', stage: 'plan', details: { cell: goal, role: 'goal' } },
+          };
+        if (grid.isBlocked(start))
+          return { ok: false, error: { code: 'START_BLOCKED', stage: 'plan', details: { cell: start } } };
+        if (grid.isBlocked(goal))
+          return {
+            ok: false,
+            error: { code: 'GOAL_BLOCKED', stage: 'plan', details: { cell: goal, goalIndex, label: null } },
+          };
+        if (eq(start, goal))
+          return {
+            ok: true,
+            value: {
+              from: start,
+              to: goal,
+              cells: [start],
+              steps: 0,
+              cost: 0,
+              turns: 0,
+              explored: [start],
+              expandedNodes: 0,
+            },
+          };
+        const W = grid.width,
+          N = W * grid.height * 5;
+        const g = new Float64Array(N).fill(Infinity),
+          parent = new Int32Array(N).fill(-1),
+          closed = new Uint8Array(N);
+        const seen = new Uint8Array(W * grid.height);
+        const explored = [];
+        const s0 = grid.index(start) * 5 + 4;
+        g[s0] = 0;
+        const heap = new MinHeap();
+        heap.push({ st: s0, f: manhattan(start, goal), h: manhattan(start, goal) });
+        let expanded = 0;
+        while (heap.size) {
+          const { st } = heap.pop();
+          if (closed[st]) continue;
+          closed[st] = 1;
+          expanded++;
+          const ci = Math.floor(st / 5),
+            dir = st % 5,
+            cx = ci % W,
+            cy = Math.floor(ci / W);
+          if (!seen[ci]) {
+            seen[ci] = 1;
+            explored.push({ x: cx, y: cy });
+          }
+          if (cx === goal.x && cy === goal.y) {
+            const cells = [];
+            for (let s = st; s !== -1; s = parent[s]) {
+              const i = Math.floor(s / 5);
+              cells.push({ x: i % W, y: Math.floor(i / W) });
+            }
+            cells.reverse();
+            return {
+              ok: true,
+              value: {
+                from: start,
+                to: goal,
+                cells,
+                steps: cells.length - 1,
+                cost: cells.length - 1,
+                turns: countTurns(cells),
+                explored,
+                expandedNodes: expanded,
+              },
+            };
+          }
+          if (expanded > 200000) break;
+          for (let k = 0; k < 4; k++) {
+            const n = { x: cx + DIRS[k].dx, y: cy + DIRS[k].dy };
+            if (grid.isBlocked(n)) continue;
+            const ns = grid.index(n) * 5 + k;
+            if (closed[ns]) continue;
+            const ng = g[st] + 1 + (dir !== 4 && dir !== k ? TURN_EPSILON : 0);
+            if (ng < g[ns] - 1e-12) {
+              g[ns] = ng;
+              parent[ns] = st;
+              const h = manhattan(n, goal);
+              heap.push({ st: ns, f: ng + h, h });
+            }
+          }
+        }
+        const sr = regionInfo(grid, floodFill(grid, start)),
+          gr = regionInfo(grid, floodFill(grid, goal));
+        return {
+          ok: false,
+          error: {
+            code: 'UNREACHABLE',
+            stage: 'plan',
+            details: {
+              segmentIndex: 0,
+              completedSegments: 0,
+              from: start,
+              to: goal,
+              startRegionSize: sr.size,
+              goalRegionSize: gr.size,
+              startRegion: sr.cells,
+              goalRegion: gr.cells,
+            },
+          },
+        };
+      }
+      function planRoute({ grid, start, goals }) {
+        const t0 = performance.now();
+        const segments = [];
+        let from = start;
+        for (let i = 0; i < goals.length; i++) {
+          const r = findPath(grid, from, goals[i], i);
+          if (!r.ok) {
+            const e = r.error;
+            if (e.code === 'UNREACHABLE')
+              return {
+                ok: false,
+                error: { ...e, details: { ...e.details, segmentIndex: i, completedSegments: i } },
+              };
+            return { ok: false, error: e };
+          }
+          segments.push({ ...r.value, index: i });
+          from = goals[i];
+        }
+        const sum = (f) => segments.reduce((n, s) => n + f(s), 0);
+        return {
+          ok: true,
+          value: {
+            segments,
+            totalSteps: sum((s) => s.steps),
+            totalCost: sum((s) => s.cost),
+            totalTurns: sum((s) => s.turns),
+            expandedNodes: sum((s) => s.expandedNodes),
+            durationMs: performance.now() - t0,
+            notes: [],
+          },
+        };
+      }
+      function flattenSegments(segments) {
+        const path = [],
+          waypointIndices = [];
+        segments.forEach((s, i) => {
+          path.push(...(i === 0 ? s.cells : s.cells.slice(1)));
+          waypointIndices.push(path.length - 1);
+        });
+        return { path, waypointIndices };
+      }
+
+      /* =====================================================================
+       * 4. 规则式 NLU：归一化 → 词表最长匹配分词 → 状态机 → 地点映射
+       * ===================================================================== */
+      const LEADING_FILLERS = [
+        '请你',
+        '请',
+        '麻烦你',
+        '麻烦',
+        '帮我',
+        '帮忙',
+        '能不能',
+        '能否',
+        '可不可以',
+        '可以',
+        '让',
+        '把',
+        '给我',
+        '您',
+        '你们',
+        '你',
+        '我们',
+        '我要',
+        '我想',
+        '我需要',
+        '我',
+        '要',
+        '想',
+        '需要',
+        '小机器人',
+        '机器人',
+        '小车',
+        '现在',
+        '马上',
+        '立刻',
+        '立即',
+        '赶紧',
+      ].sort((a, b) => b.length - a.length);
+      const TRAILING_FILLERS = [
+        '谢谢你',
+        '谢谢',
+        '好不好',
+        '好吗',
+        '可以吗',
+        '行吗',
+        '吧',
+        '呢',
+        '啊',
+        '呀',
+        '哦',
+        '啦',
+        '一下',
+      ].sort((a, b) => b.length - a.length);
+      const EDGE_PREFIX = ['那个', '这个', '一下', '的'];
+      const EDGE_SUFFIX = ['的位置', '位置', '那边', '那里', '旁边', '附近', '边上', '一下', '的'];
+      const NEGATIONS = ['不要', '别去', '别到', '不去', '不用去', '不经过', '避开', '绕开', '绕过', '禁止'];
+      const MARKERS = {
+        FROM: ['从', '由'],
+        VERB: [
+          '到',
+          '至',
+          '→',
+          '去',
+          '前往',
+          '去往',
+          '走到',
+          '走去',
+          '移动到',
+          '移动去',
+          '导航到',
+          '导航去',
+          '开到',
+          '开去',
+          '回到',
+          '返回到',
+          '返回',
+          '抵达',
+          '到达',
+          '带我去',
+          '带我到',
+          '送我去',
+          '送我到',
+        ],
+        DEPART: ['出发', '开始', '动身'],
+        SEQ: [
+          '然后',
+          '接着',
+          '之后',
+          '随后',
+          '最后',
+          '再',
+          '先',
+          '并且',
+          '并',
+          '和',
+          '与',
+          '以及',
+          '及',
+          '依次',
+          '分别',
+          '、',
+        ],
+        VIA: ['经过', '途经', '路过', '经由'],
+        NEAREST: ['离我最近的', '离这里最近的', '最近的', '最近'],
+        SEP: [','],
+      };
+      const DEICTIC = {
+        here: ['当前位置', '现在的位置', '我这里', '这里', '此处', '原地'],
+        start: ['起点', '出发点', '出发地', '起始点'],
+      };
+      const CATEGORY_WORDS = {
+        entrance: ['入口', '门口', '大门', '出入口'],
+        workbench: ['工作台', '工位', '操作台'],
+        charging: ['充电区', '充电桩', '充电站', '充电处', '充电点', '充电'],
+        storage: ['仓库', '库房', '储物间', '货架区', '货架'],
+        rest: ['休息区', '休息室', '茶水间'],
+        office: ['办公室', '办公区'],
+        dock: ['装卸区', '卸货区', '月台'],
+        lab: ['实验室', '实验区'],
+        equipment: ['设备间', '设备室', '机房'],
+        corridor: ['走廊', '过道'],
+        other: [],
+      };
+      const CAT_INDEX = new Map(Object.entries(CATEGORY_WORDS).flatMap(([c, ws]) => ws.map((w) => [w, c])));
+      const PATTERN_LABELS = {
+        GO_TO: '去某地',
+        FROM_TO: '从某地到某地',
+        ROUTE_SHORTHAND: '某地到某地（简写）',
+        SEQUENCE: '多目标顺序访问',
+        IMPLICIT_GO_TO: '只说了地点名',
+      };
+
+      function cnNum(s) {
+        const d = { 零: 0, 〇: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+        if (s.includes('十')) {
+          const [a, b] = s.split('十');
+          return String((a ? d[a] : 1) * 10 + (b ? d[b] : 0));
+        }
+        return [...s].map((c) => d[c]).join('');
+      }
+      function normalizeText(raw) {
+        let s = raw.normalize('NFKC').toUpperCase().replace(/\s+/g, '');
+        s = s.replace(/-+>|=>|—>/g, '→').replace(/[，,。．.！!？?；;：:]/g, ',');
+        s = s.replace(/([零〇一二两三四五六七八九十]+)(?=号)/g, (m) => cnNum(m));
+        return s.replace(/,+/g, ',').replace(/^,|,$/g, '');
+      }
+      function buildParseContext(map) {
+        const terms = new Set();
+        map.locations.forEach((l) => {
+          terms.add(normalizeText(l.name));
+          l.aliases.forEach((a) => terms.add(normalizeText(a)));
+        });
+        Object.values(CATEGORY_WORDS)
+          .flat()
+          .forEach((w) => terms.add(w));
+        [...DEICTIC.here, ...DEICTIC.start].forEach((w) => terms.add(w));
+        const entries = [...terms].map((t) => ({ text: t, type: 'PLACE', pri: 0 }));
+        Object.entries(MARKERS).forEach(([type, list]) =>
+          list.forEach((t) => entries.push({ text: t, type, pri: 1 })),
+        );
+        entries.sort((a, b) => b.text.length - a.text.length || a.pri - b.pri);
+        return { mapId: map.id, placeTerms: [...terms], entries };
+      }
+      function stripFillers(s, placeTerms) {
+        for (let changed = true; changed;) {
+          changed = false;
+          if (placeTerms.some((t) => s.startsWith(t))) break;
+          for (const f of LEADING_FILLERS)
+            if (s.startsWith(f)) {
+              s = s.slice(f.length);
+              changed = true;
+              break;
+            }
+        }
+        for (let changed = true; changed;) {
+          changed = false;
+          for (const f of TRAILING_FILLERS)
+            if (s.endsWith(f) && !placeTerms.some((t) => s.endsWith(t) && t.length >= f.length)) {
+              s = s.slice(0, -f.length);
+              changed = true;
+              break;
+            }
+        }
+        return s.replace(/^,+|,+$/g, '');
+      }
+      function scan(s, entries) {
+        const tokens = [];
+        let buf = '',
+          start = 0;
+        const flush = (i) => {
+          if (buf) tokens.push({ type: 'TEXT', text: buf, span: [start, i] });
+          buf = '';
+        };
+        for (let i = 0; i < s.length;) {
+          const e = entries.find((en) => s.startsWith(en.text, i));
+          if (e) {
+            flush(i);
+            tokens.push({ type: e.type, text: e.text, span: [i, i + e.text.length] });
+            i += e.text.length;
+          } else {
+            if (!buf) start = i;
+            buf += s[i];
+            i++;
+          }
+        }
+        flush(s.length);
+        return tokens;
+      }
+      function cleanText(tok) {
+        let { text } = tok;
+        let [a, b] = tok.span;
+        for (let changed = true; changed && text;) {
+          changed = false;
+          for (const p of EDGE_PREFIX)
+            if (text.startsWith(p)) {
+              text = text.slice(p.length);
+              a += p.length;
+              changed = true;
+              break;
+            }
+          for (const p of EDGE_SUFFIX)
+            if (text.endsWith(p)) {
+              text = text.slice(0, -p.length);
+              b -= p.length;
+              changed = true;
+              break;
+            }
+        }
+        return text ? { ...tok, text, span: [a, b] } : null;
+      }
+      const parseErr = (code, details = {}) => ({ ok: false, error: { code, stage: 'parse', details } });
+
+      function parseCommand(raw, ctx) {
+        const len = [...raw.trim()].length;
+        if (len > LIMITS.MAX_INPUT_LENGTH)
+          return parseErr('INPUT_TOO_LONG', { length: len, max: LIMITS.MAX_INPUT_LENGTH });
+        const normalized = stripFillers(normalizeText(raw), ctx.placeTerms);
+        if (!normalized) return parseErr('EMPTY_INPUT');
+        const neg = NEGATIONS.find((n) => normalized.includes(n));
+        if (neg) return parseErr('UNSUPPORTED_EXPRESSION', { matched: neg });
+        const tokens = scan(normalized, ctx.entries)
+          .map((t) => (t.type === 'TEXT' ? cleanText(t) : t))
+          .filter(Boolean);
+        const items = [];
+        for (const t of tokens) {
+          const last = items[items.length - 1];
+          const isPlace = t.type === 'PLACE' || t.type === 'TEXT';
+          if (isPlace && last && last.kind === 'MENTION') last.parts.push(t);
+          else if (isPlace) items.push({ kind: 'MENTION', parts: [t] });
+          else items.push({ kind: t.type, token: t });
+        }
+        const notes = [];
+        let role = null,
+          sawVerb = false,
+          start = null,
+          startExplicit = false,
+          shorthand = false,
+          modifier = null,
+          n = 0;
+        const goals = [],
+          prefix = [];
+        const mk = (it, r) => {
+          const p = it.parts,
+            text = p.map((x) => x.text).join(''),
+            single = p.length === 1 && p[0].type === 'PLACE';
+          return {
+            id: it.id,
+            text,
+            span: [p[0].span[0], p[p.length - 1].span[1]],
+            role: r,
+            modifier: it.modifier,
+            deictic:
+              single && DEICTIC.here.includes(text)
+                ? 'here'
+                : single && DEICTIC.start.includes(text)
+                  ? 'start'
+                  : null,
+            lexical: single ? 'known' : 'unknown',
+          };
+        };
+        for (const it of items) {
+          if (it.kind === 'MENTION') {
+            it.id = `m${n++}`;
+            it.modifier = modifier;
+            modifier = null;
+            if (role === 'start') {
+              if (!start) {
+                start = mk(it, 'start');
+                startExplicit = true;
+              } else notes.push(`多余的起点「${it.parts.map((p) => p.text).join('')}」已忽略`);
+              role = null;
+            } else if (role === 'goal') goals.push(mk(it, 'goal'));
+            else prefix.push(it);
+            continue;
+          }
+          switch (it.kind) {
+            case 'FROM':
+              role = 'start';
+              break;
+            case 'VERB':
+            case 'VIA':
+              if (role === 'start') notes.push('“从”后缺少起点，已使用机器人当前位置');
+              if (!sawVerb && !start && prefix.length > 0) {
+                start = mk(prefix.shift(), 'start');
+                shorthand = true;
+                prefix.splice(0).forEach((p) => goals.push(mk(p, 'goal')));
+              }
+              role = 'goal';
+              sawVerb = true;
+              break;
+            case 'DEPART':
+              role = null;
+              break;
+            case 'SEQ':
+            case 'SEP':
+              if (sawVerb) role = 'goal';
+              break;
+            case 'NEAREST':
+              modifier = 'nearest';
+              break;
+          }
+        }
+        let pattern = null;
+        if (goals.length === 0) {
+          if (
+            !sawVerb &&
+            !start &&
+            prefix.length === 1 &&
+            prefix[0].parts.length === 1 &&
+            prefix[0].parts[0].type === 'PLACE'
+          ) {
+            goals.push(mk(prefix[0], 'goal'));
+            pattern = 'IMPLICIT_GO_TO';
+            notes.push('未检测到动词，按“去<地点>”理解');
+          } else if (start) return parseErr('NO_DESTINATION', { normalized });
+          else return parseErr('NO_INTENT', { normalized });
+        }
+        if (goals.length > LIMITS.MAX_WAYPOINTS)
+          return parseErr('TOO_MANY_WAYPOINTS', { count: goals.length, max: LIMITS.MAX_WAYPOINTS });
+        pattern =
+          pattern ||
+          (goals.length >= 2
+            ? 'SEQUENCE'
+            : startExplicit
+              ? 'FROM_TO'
+              : shorthand
+                ? 'ROUTE_SHORTHAND'
+                : 'GO_TO');
+        return {
+          ok: true,
+          value: {
+            raw,
+            normalized,
+            intent: 'navigate',
+            pattern,
+            start,
+            goals,
+            tokens,
+            parser: 'rule',
+            notes,
+          },
+        };
+      }
+
+      function levenshtein(a, b) {
+        const s = [...a],
+          t = [...b];
+        let prev = Array.from({ length: t.length + 1 }, (_, j) => j);
+        for (let i = 1; i <= s.length; i++) {
+          const cur = [i];
+          for (let j = 1; j <= t.length; j++)
+            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (s[i - 1] === t[j - 1] ? 0 : 1));
+          prev = cur;
+        }
+        return prev[t.length];
+      }
+      const similarity = (a, b) => {
+        const m = Math.max([...a].length, [...b].length);
+        return m === 0 ? 1 : 1 - levenshtein(a, b) / m;
+      };
+      const brief = (l, score = null) => ({ locationId: l.id, name: l.name, cell: l.anchor, score });
+
+      function resolveMention(m, ctx, prevCell, startPlace) {
+        const { map, robotCell, clarifications, distance } = ctx;
+        const locs = map.locations;
+        const place = (l, matchType, confidence = 1, alternatives = []) => ({
+          ok: true,
+          value: {
+            mentionId: m.id,
+            mentionText: m.text,
+            locationId: l.id,
+            label: l.name,
+            cell: l.anchor,
+            matchType,
+            confidence,
+            alternatives,
+          },
+        });
+        const fail = (code, details = {}) => ({ ok: false, error: { code, stage: 'ground', details } });
+        if (m.deictic === 'here' || (m.deictic === 'start' && m.role === 'start')) {
+          if (!robotCell) return fail('NO_ROBOT_START');
+          return {
+            ok: true,
+            value: {
+              mentionId: m.id,
+              mentionText: m.text,
+              locationId: null,
+              label: '机器人当前位置',
+              cell: robotCell,
+              matchType: 'deictic',
+              confidence: 1,
+              alternatives: [],
+            },
+          };
+        }
+        if (m.deictic === 'start')
+          return {
+            ok: true,
+            value: { ...startPlace, mentionId: m.id, mentionText: m.text, matchType: 'deictic' },
+          };
+        const cid = clarifications[m.text];
+        if (cid) {
+          const l = locs.find((x) => x.id === cid);
+          if (l) return place(l, 'clarified');
+          ctx.notes.push(`澄清项「${m.text}」→「${cid}」无效，已忽略`);
+        }
+        const exact = locs.filter((l) => normalizeText(l.name) === m.text);
+        if (exact.length === 1) {
+          if (m.modifier) ctx.notes.push(`「${m.text}」是唯一地点，“最近的”被忽略`);
+          return place(exact[0], 'exact');
+        }
+        const alias = locs.filter((l) => l.aliases.some((a) => normalizeText(a) === m.text));
+        if (alias.length === 1) return place(alias[0], 'alias');
+        if (alias.length > 1)
+          return fail('AMBIGUOUS_LOCATION', { mention: m, candidates: alias.map((l) => brief(l)) });
+        const cat = CAT_INDEX.get(m.text);
+        const members = cat ? locs.filter((l) => l.category === cat) : [];
+        if (members.length === 1) return place(members[0], 'category');
+        if (members.length > 1) {
+          if (m.modifier !== 'nearest')
+            return fail('AMBIGUOUS_LOCATION', { mention: m, candidates: members.map((l) => brief(l)) });
+          if (!prevCell) return fail('NO_ROBOT_START');
+          const scored = members.map((l) => {
+            const d = distance ? distance(prevCell, l.anchor) : manhattan(prevCell, l.anchor);
+            return { l, d: d === null ? Infinity : d };
+          });
+          let pool = scored;
+          if (scored.every((s) => s.d === Infinity)) {
+            pool = members.map((l) => ({ l, d: manhattan(prevCell, l.anchor) }));
+            ctx.notes.push('所有候选都不可达，按直线距离选择');
+          }
+          const best = pool.reduce((a, b) => (b.d < a.d ? b : a));
+          ctx.notes.push(
+            `“最近的${m.text}”：选择「${best.l.name}」（${best.d} 步），其余：${pool
+              .filter((s) => s !== best)
+              .map((s) => `${s.l.name} ${s.d === Infinity ? '不可达' : s.d + ' 步'}`)
+              .join('、')}`,
+          );
+          return place(
+            best.l,
+            'nearest',
+            1,
+            pool.filter((s) => s !== best).map((s) => brief(s.l, s.d === Infinity ? null : s.d)),
+          );
+        }
+        const scored = locs
+          .map((l, i) => ({
+            l,
+            i,
+            s: Math.max(...[l.name, ...l.aliases].map((t) => similarity(m.text, normalizeText(t)))),
+          }))
+          .sort((a, b) => b.s - a.s || a.i - b.i);
+        const [b1, b2] = scored;
+        if (b1 && b1.s >= 0.75 && (!b2 || b1.s - b2.s >= 0.1)) {
+          ctx.notes.push(`「${m.text}」模糊匹配为「${b1.l.name}」（相似度 ${b1.s.toFixed(2)}）`);
+          return place(
+            b1.l,
+            'fuzzy',
+            +b1.s.toFixed(2),
+            scored.slice(1, 3).map((x) => brief(x.l, +x.s.toFixed(2))),
+          );
+        }
+        const sugg = scored
+          .filter((x) => x.s >= 0.2)
+          .slice(0, 4)
+          .map((x) => brief(x.l, +x.s.toFixed(2)));
+        for (const l of locs) {
+          if (sugg.length >= 4) break;
+          if (!sugg.some((s) => s.locationId === l.id)) sugg.push(brief(l));
+        }
+        return fail('UNKNOWN_LOCATION', { mention: m, suggestions: sugg });
+      }
+      function groundCommand(cmd, ctx) {
+        ctx.notes = [];
+        let start;
+        if (!cmd.start) {
+          if (!ctx.robotCell)
+            return { ok: false, error: { code: 'NO_ROBOT_START', stage: 'ground', details: {} } };
+          start = {
+            mentionId: null,
+            mentionText: null,
+            locationId: null,
+            label: '机器人当前位置',
+            cell: ctx.robotCell,
+            matchType: 'robot',
+            confidence: 1,
+            alternatives: [],
+          };
+        } else {
+          const r = resolveMention(cmd.start, ctx, ctx.robotCell, null);
+          if (!r.ok) return r;
+          start = r.value;
+        }
+        const goals = [];
+        let prev = start.cell;
+        for (const g of cmd.goals) {
+          const r = resolveMention(g, ctx, prev, start);
+          if (!r.ok) return r;
+          const last = goals[goals.length - 1];
+          if (last && eq(last.cell, r.value.cell)) {
+            ctx.notes.push(`连续重复的目标「${r.value.label}」已合并`);
+            continue;
+          }
+          goals.push(r.value);
+          prev = r.value.cell;
+        }
+        return {
+          ok: true,
+          value: { start, startSource: cmd.start ? 'command' : 'robot', goals, notes: ctx.notes },
+        };
+      }
+
+      /* =====================================================================
+       * 5. 流水线：parse → ground → plan，生成可序列化 Trace
+       * ===================================================================== */
+      const ERROR_OUTCOME = {
+        INVALID_REQUEST: 'failed',
+        MAP_NOT_FOUND: 'failed',
+        EMPTY_INPUT: 'failed',
+        INPUT_TOO_LONG: 'failed',
+        UNSUPPORTED_EXPRESSION: 'failed',
+        NO_INTENT: 'failed',
+        NO_DESTINATION: 'clarification',
+        TOO_MANY_WAYPOINTS: 'failed',
+        NO_ROBOT_START: 'clarification',
+        UNKNOWN_LOCATION: 'clarification',
+        AMBIGUOUS_LOCATION: 'clarification',
+        OUT_OF_BOUNDS: 'failed',
+        START_BLOCKED: 'unreachable',
+        GOAL_BLOCKED: 'unreachable',
+        UNREACHABLE: 'unreachable',
+        ROBOT_CELL_BLOCKED: 'unreachable',
+        INTERNAL: 'failed',
+      };
+      const quote = (list) => list.map((l) => `「${l.name}」`).join('、');
+      function describeError(e) {
+        const d = e.details;
+        switch (e.code) {
+          case 'MAP_NOT_FOUND':
+            return { tone: 'error', title: '地图不存在', detail: `找不到 id 为「${d.mapId}」的地图。` };
+          case 'EMPTY_INPUT':
+            return { tone: 'info', title: '请输入指令', detail: '例如：“从入口去工作台A”或“去充电区”。' };
+          case 'INPUT_TOO_LONG':
+            return {
+              tone: 'warning',
+              title: '指令过长',
+              detail: `当前 ${d.length} 字，最多 ${d.max} 字，请精简后重试。`,
+            };
+          case 'UNSUPPORTED_EXPRESSION':
+            return {
+              tone: 'warning',
+              title: '暂不支持该表达',
+              detail: `检测到「${d.matched}」。当前版本不支持否定或规避类指令，请直接说明要去的地点。`,
+            };
+          case 'NO_INTENT':
+            return {
+              tone: 'warning',
+              title: '没有识别到导航意图',
+              detail: '请使用“去<地点>”“从<地点>到<地点>”或“先去<地点>，再去<地点>”这样的说法。',
+            };
+          case 'NO_DESTINATION':
+            return {
+              tone: 'info',
+              title: '缺少目的地',
+              detail: '已识别到起点，但没有说明要去哪里，例如：“从入口去工作台A”。',
+            };
+          case 'TOO_MANY_WAYPOINTS':
+            return {
+              tone: 'warning',
+              title: '目标点过多',
+              detail: `一次最多访问 ${d.max} 个地点，当前 ${d.count} 个。`,
+            };
+          case 'NO_ROBOT_START':
+            return {
+              tone: 'info',
+              title: '还没有放置机器人',
+              detail: '请先在地图上点击放置机器人，或在指令中说明起点，例如“从入口去工作台A”。',
+            };
+          case 'UNKNOWN_LOCATION':
+            return {
+              tone: 'info',
+              title: `地图中没有「${d.mention.text}」`,
+              detail: d.suggestions.length
+                ? `你是想去 ${quote(d.suggestions)} 吗？请选择一个，或重新输入。`
+                : '请检查地点名称后重新输入。',
+            };
+          case 'AMBIGUOUS_LOCATION':
+            return {
+              tone: 'info',
+              title: `「${d.mention.text}」指代不明确`,
+              detail: `地图上有 ${d.candidates.length} 个匹配的地点：${quote(d.candidates)}，请选择一个。`,
+            };
+          case 'OUT_OF_BOUNDS':
+            return {
+              tone: 'error',
+              title: '坐标超出地图范围',
+              detail: `${d.role === 'start' ? '起点' : '目标'} ${fmt(d.cell)} 不在地图内。`,
+            };
+          case 'START_BLOCKED':
+            return {
+              tone: 'error',
+              title: '起点被障碍占据',
+              detail: `起点 ${fmt(d.cell)} 是障碍格，请移除障碍或更换起点。`,
+            };
+          case 'GOAL_BLOCKED':
+            return {
+              tone: 'error',
+              title: '目标被障碍占据',
+              detail: `「${d.label ?? `第 ${d.goalIndex + 1} 个目标`}」的停靠点 ${fmt(d.cell)} 是障碍格。`,
+            };
+          case 'UNREACHABLE':
+            return {
+              tone: 'error',
+              title: '目标无法到达',
+              detail: `第 ${d.segmentIndex + 1} 段 ${fmt(d.from)} → ${fmt(d.to)} 之间没有可通行的路线：起点所在区域共 ${d.startRegionSize} 格，目标所在区域共 ${d.goalRegionSize} 格，两者被障碍完全隔开。`,
+            };
+          case 'ROBOT_CELL_BLOCKED':
+            return {
+              tone: 'error',
+              title: '机器人所在格被占据',
+              detail: `机器人所在或正在进入的格子 ${fmt(d.cell)} 被设为障碍，已停止运行。`,
+            };
+          default:
+            return { tone: 'error', title: '内部错误', detail: d.message || e.code };
+        }
+      }
+      let traceSeq = 0;
+      function navigate(req) {
+        const t0 = performance.now();
+        const trace = {
+          traceId: `tr_${Date.now().toString(36)}${(++traceSeq).toString(36)}`,
+          createdAt: new Date().toISOString(),
+          source: 'local',
+          request: req,
+          parser: { requested: 'rule', used: 'rule', fallback: null },
+          stages: {
+            parse: { status: 'skipped' },
+            ground: { status: 'skipped' },
+            plan: { status: 'skipped' },
+          },
+          outcome: 'success',
+          error: null,
+          suggestions: [],
+          summary: '',
+          totalMs: 0,
+        };
+        const finish = (error) => {
+          trace.totalMs = performance.now() - t0;
+          if (error) {
+            trace.error = error;
+            trace.outcome = ERROR_OUTCOME[error.code] || 'failed';
+            trace.summary = describeError(error).title;
+          }
+          return trace;
+        };
+        const map = MAPS.find((m) => m.id === req.mapId);
+        if (!map) return finish({ code: 'MAP_NOT_FOUND', stage: 'request', details: { mapId: req.mapId } });
+        const grid = createGrid(map, req.overrides);
+        let t = performance.now();
+        const parsed = parseCommand(req.text, buildParseContext(map));
+        trace.stages.parse = parsed.ok
+          ? { status: 'ok', data: parsed.value, durationMs: performance.now() - t }
+          : { status: 'error', error: parsed.error, durationMs: performance.now() - t };
+        if (!parsed.ok) {
+          const examples = map.presets.filter((p) => p.expect.outcome === 'success').slice(0, 3);
+          trace.suggestions = examples.map((p) => ({ kind: 'rephrase', example: p.text }));
+          return finish(parsed.error);
+        }
+        t = performance.now();
+        const distance = (a, b) => {
+          const r = findPath(grid, a, b);
+          return r.ok ? r.value.steps : null;
+        };
+        const grounded = groundCommand(parsed.value, {
+          map,
+          robotCell: req.robotCell,
+          clarifications: req.clarifications || {},
+          distance,
+        });
+        trace.stages.ground = grounded.ok
+          ? { status: 'ok', data: grounded.value, durationMs: performance.now() - t }
+          : { status: 'error', error: grounded.error, durationMs: performance.now() - t };
+        if (!grounded.ok) {
+          const e = grounded.error;
+          if (e.code === 'AMBIGUOUS_LOCATION')
+            trace.suggestions = e.details.candidates.map((c) => ({
+              kind: 'chooseLocation',
+              mentionText: e.details.mention.text,
+              locationId: c.locationId,
+              label: c.name,
+            }));
+          if (e.code === 'UNKNOWN_LOCATION')
+            trace.suggestions = e.details.suggestions.map((c) => ({
+              kind: 'chooseLocation',
+              mentionText: e.details.mention.text,
+              locationId: c.locationId,
+              label: c.name,
+            }));
+          if (e.code === 'NO_ROBOT_START') {
+            const l = map.locations.find((x) => x.id === map.defaultStart);
+            trace.suggestions = [{ kind: 'placeRobot', locationId: l.id, label: l.name }];
+          }
+          return finish(e);
+        }
+        t = performance.now();
+        const g = grounded.value;
+        const plan = planRoute({ grid, start: g.start.cell, goals: g.goals.map((x) => x.cell) });
+        if (!plan.ok) {
+          let e = plan.error;
+          if (e.code === 'GOAL_BLOCKED')
+            e = { ...e, details: { ...e.details, label: g.goals[e.details.goalIndex]?.label ?? null } };
+          trace.stages.plan = { status: 'error', error: e, durationMs: performance.now() - t };
+          if (e.code === 'UNREACHABLE') {
+            const closed = resolveClosed(map, req.overrides);
+            trace.suggestions = closed
+              .filter((pid) => {
+                const g2 = createGrid(map, {
+                  ...req.overrides,
+                  closedPassages: closed.filter((x) => x !== pid),
+                });
+                return findPath(g2, e.details.from, e.details.to).ok;
+              })
+              .map((pid) => ({
+                kind: 'openPassage',
+                passageId: pid,
+                label: map.passages.find((p) => p.id === pid).name,
+              }));
+          }
+          return finish(e);
+        }
+        if (plan.value.totalSteps === 0) plan.value.notes.push('起点与目标相同，无需移动');
+        trace.stages.plan = { status: 'ok', data: plan.value, durationMs: performance.now() - t };
+        const labels = [g.start.label, ...g.goals.map((x) => x.label)];
+        trace.summary =
+          plan.value.totalSteps === 0
+            ? `已在「${labels[labels.length - 1]}」，无需移动。`
+            : `已规划路线：${labels.join(' → ')}，共 ${plan.value.totalSteps} 步${plan.value.segments.length > 1 ? `（${plan.value.segments.length} 段）` : ''}。`;
+        return finish(null);
+      }
+
+      /* =====================================================================
+       * 6. 确定性仿真器：由 advance(dt) 推进；动态障碍时从承诺格重规划
+       * ===================================================================== */
+      function createSimulator({ grid, plan, goals, speed = 4, dwellMs = DWELL_MS }) {
+        const flat = flattenSegments(plan.segments);
+        const s = {
+          grid,
+          goals,
+          path: flat.path,
+          wp: flat.waypointIndices,
+          idx: 0,
+          t: 0,
+          status: 'ready',
+          next: 0,
+          dwell: 0,
+          speed,
+          stepMode: false,
+          traveled: [flat.path[0]],
+          replanCount: 0,
+          blockedBy: null,
+          pendingBlock: null,
+          elapsed: 0,
+          heading: 0,
+        };
+        const dirHeading = (a, b) => ((Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI + 360) % 360;
+        if (s.path.length > 1) s.heading = dirHeading(s.path[0], s.path[1]);
+        const committedIdx = () => (s.t > 0 ? s.idx + 1 : s.idx);
+        const reachWaypoints = (ev) => {
+          let reached = false;
+          while (s.next < s.wp.length && s.wp[s.next] === s.idx) {
+            ev.push({ type: 'waypointReached', waypoint: s.next, cell: s.path[s.idx], atMs: s.elapsed });
+            s.next++;
+            reached = true;
+          }
+          if (s.next >= s.wp.length) {
+            s.status = 'arrived';
+            ev.push({ type: 'arrived', cell: s.path[s.idx], atMs: s.elapsed });
+            return true;
+          }
+          if (reached && dwellMs > 0) {
+            s.status = 'dwelling';
+            s.dwell = dwellMs;
+          }
+          return false;
+        };
+        const api = {
+          getSnapshot() {
+            const a = s.path[s.idx],
+              b = s.path[Math.min(s.idx + 1, s.path.length - 1)];
+            const total = Math.max(1, s.path.length - 1);
+            return {
+              status: s.status,
+              pose: { x: a.x + (b.x - a.x) * s.t, y: a.y + (b.y - a.y) * s.t, headingDeg: s.heading },
+              currentCell: a,
+              committedCell: s.path[committedIdx()],
+              path: s.path,
+              pathIndex: s.idx,
+              waypointIndices: s.wp,
+              nextWaypoint: s.next,
+              traveled: s.traveled,
+              progress: s.path.length <= 1 ? 1 : Math.min(1, (s.idx + s.t) / total),
+              elapsedMs: s.elapsed,
+              replanCount: s.replanCount,
+              speed: s.speed,
+              blockedBy: s.blockedBy,
+            };
+          },
+          start() {
+            if (s.status !== 'ready') return [];
+            const ev = [{ type: 'started', atMs: 0 }];
+            s.status = 'running';
+            if (s.path.length === 1) reachWaypoints(ev);
+            return ev;
+          },
+          pause() {
+            if (s.status === 'running' || s.status === 'dwelling') {
+              s.resumeTo = s.status;
+              s.status = 'paused';
+              return [{ type: 'paused', atMs: s.elapsed }];
+            }
+            return [];
+          },
+          resume() {
+            if (s.status === 'paused') {
+              s.status = s.resumeTo || 'running';
+              return [{ type: 'resumed', atMs: s.elapsed }];
+            }
+            return [];
+          },
+          step() {
+            if (s.status === 'ready') {
+              const ev = api.start();
+              if (s.status === 'running') s.stepMode = true;
+              return ev;
+            }
+            if (s.status === 'paused') {
+              s.stepMode = true;
+              s.status = 'running';
+              if (s.resumeTo === 'dwelling') {
+                s.dwell = 0;
+              }
+              return [];
+            }
+            return [];
+          },
+          setSpeed(v) {
+            s.speed = Math.min(20, Math.max(0.5, v));
+          },
+          advance(dtMs) {
+            const ev = [];
+            const dt = Number.isFinite(dtMs) && dtMs > 0 ? dtMs : 0;
+            if (s.status === 'dwelling') {
+              s.elapsed += dt;
+              s.dwell -= dt;
+              if (s.dwell <= 0) s.status = s.stepMode ? ((s.stepMode = false), 'paused') : 'running';
+              return ev;
+            }
+            if (s.status !== 'running') return ev;
+            s.elapsed += dt;
+            let dist = (s.speed * dt) / 1000;
+            while (dist > 0 && s.status === 'running') {
+              if (s.idx >= s.path.length - 1) {
+                if (s.pendingBlock) {
+                  s.status = 'blocked';
+                  s.blockedBy = s.pendingBlock;
+                  ev.push({ type: 'blocked', cell: s.path[s.idx], error: s.pendingBlock, atMs: s.elapsed });
+                }
+                break;
+              }
+              const a = s.path[s.idx],
+                b = s.path[s.idx + 1];
+              s.heading = dirHeading(a, b);
+              const remaining = 1 - s.t;
+              if (dist < remaining) {
+                s.t += dist;
+                dist = 0;
+                break;
+              }
+              dist -= remaining;
+              s.idx++;
+              s.t = 0;
+              s.traveled.push(s.path[s.idx]);
+              ev.push({ type: 'cellEntered', cell: s.path[s.idx], atMs: s.elapsed });
+              if (reachWaypoints(ev)) break;
+              if (s.pendingBlock && s.idx >= s.path.length - 1) {
+                s.status = 'blocked';
+                s.blockedBy = s.pendingBlock;
+                ev.push({ type: 'blocked', cell: s.path[s.idx], error: s.pendingBlock, atMs: s.elapsed });
+                break;
+              }
+              if (s.status === 'dwelling') break;
+              if (s.stepMode) {
+                s.stepMode = false;
+                s.status = 'paused';
+                s.resumeTo = 'running';
+                break;
+              }
+            }
+            return ev;
+          },
+          updateGrid(grid) {
+            s.grid = grid;
+            if (s.status === 'arrived' || s.status === 'blocked') return [];
+            const ci = committedIdx();
+            const cur = s.path[s.idx],
+              com = s.path[ci];
+            if (grid.isBlocked(cur) || grid.isBlocked(com)) {
+              const error = {
+                code: 'ROBOT_CELL_BLOCKED',
+                stage: 'execute',
+                details: { cell: grid.isBlocked(cur) ? cur : com },
+              };
+              s.status = 'blocked';
+              s.blockedBy = error;
+              return [{ type: 'blocked', cell: cur, error, atMs: s.elapsed }];
+            }
+            if (!s.path.slice(ci + 1).some((c) => grid.isBlocked(c)) && !s.pendingBlock) return [];
+            const r = planRoute({ grid, start: com, goals: s.goals.slice(s.next) });
+            if (r.ok) {
+              const f = flattenSegments(r.value.segments);
+              const oldRemain = s.path.length - 1 - ci;
+              s.path = s.path.slice(0, ci).concat(f.path);
+              s.wp = s.wp.slice(0, s.next).concat(f.waypointIndices.map((i) => i + ci));
+              s.pendingBlock = null;
+              s.replanCount++;
+              return [
+                { type: 'replanned', from: com, deltaSteps: f.path.length - 1 - oldRemain, atMs: s.elapsed },
+              ];
+            }
+            const error = { ...r.error, stage: 'execute' };
+            s.path = s.path.slice(0, ci + 1);
+            s.pendingBlock = error;
+            if (s.t === 0) {
+              s.status = 'blocked';
+              s.blockedBy = error;
+              return [{ type: 'blocked', cell: cur, error, atMs: s.elapsed }];
+            }
+            return [];
+          },
+          retry() {
+            if (s.status !== 'blocked') return [];
+            const from = s.path[s.idx];
+            const r = planRoute({ grid: s.grid, start: from, goals: s.goals.slice(s.next) });
+            if (!r.ok) {
+              s.blockedBy = { ...r.error, stage: 'execute' };
+              return [{ type: 'blocked', cell: from, error: s.blockedBy, atMs: s.elapsed }];
+            }
+            const f = flattenSegments(r.value.segments);
+            s.path = s.path.slice(0, s.idx).concat(f.path);
+            s.wp = s.wp.slice(0, s.next).concat(f.waypointIndices.map((i) => i + s.idx));
+            s.t = 0;
+            s.pendingBlock = null;
+            s.blockedBy = null;
+            s.status = 'running';
+            s.replanCount++;
+            return [{ type: 'replanned', from, deltaSteps: 0, atMs: s.elapsed }];
+          },
+          isCellLocked(c) {
+            return eq(c, s.path[s.idx]) || eq(c, s.path[committedIdx()]);
+          },
+        };
+        return api;
+      }
+
+      /* =====================================================================
+       * 7. 图标（线性风格，参考 SF Symbols）
+       * ===================================================================== */
+      const ICONS = {
+        mic: '<svg class="icon" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+        play: '<svg class="icon" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>',
+        pause:
+          '<svg class="icon" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>',
+        step: '<svg class="icon" viewBox="0 0 24 24"><path d="M6 6l7 6-7 6zM17 6v12"/></svg>',
+        reset: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4.5h4.5"/></svg>',
+        check: '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>',
+        question: '<svg viewBox="0 0 16 16"><path d="M6 6a2 2 0 1 1 3 1.7c-.7.4-1 .9-1 1.6M8 12h.01"/></svg>',
+        alert: '<svg viewBox="0 0 16 16"><path d="M8 4v5M8 12h.01"/></svg>',
+      };
+
+      /* =====================================================================
+       * 8. 地图美术参数
+       * ===================================================================== */
+      const CELL = 32,
+        PAD = 24;
+      const ART = {
+        floor: '#fbfbfd',
+        floorAlt: '#f3f4f7',
+        grid: 'rgba(0,0,0,0.035)',
+        wallTop: ['#646b78', '#525966'],
+        wallSide: '#2f343d',
+        wallEdge: 'rgba(255,255,255,0.14)',
+        tableTop: ['#ead2b5', '#dcb993'],
+        tableSide: '#b48e66',
+        tableEdge: 'rgba(255,255,255,0.45)',
+        shelfTop: ['#d3b08a', '#bf9a72'],
+        shelfSide: '#8d6a4a',
+        machineTop: ['#a3adbd', '#8692a5'],
+        machineSide: '#566072',
+        led: '#30d158',
+        dyn: '#ff9f0a',
+        dynSide: '#c77800',
+        cleared: '#30d158',
+        passageOpen: 'rgba(0,113,227,0.38)',
+        passageClosed: '#ff3b30',
+        explored: 'rgba(0,113,227,0.09)',
+        regionStart: 'rgba(0,122,255,0.13)',
+        regionGoal: 'rgba(255,45,85,0.13)',
+        traveled: '#c7c7cc',
+        text: '#1d1d1f',
+      };
+      const BOX_COLORS = ['#8ec5ff', '#ffc97a', '#a8e0a0', '#f5a3b6', '#c9b8ff'];
+
+      /* =====================================================================
+       * 9. 界面状态与渲染
+       * ===================================================================== */
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) =>
+        String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+      const state = {
+        map: MAPS[0],
+        blocked: new Set(),
+        cleared: new Set(),
+        closed: new Set(),
+        robot: null,
+        mode: 'view',
+        trace: null,
+        sim: null,
+        simGoals: [],
+        clarifications: {},
+        lastText: '',
+        history: [],
+        historyIdx: -1,
+        events: [],
+        showExplored: false,
+        showCoords: false,
+        speed: 4,
+        heading: 0,
+        lastFrame: 0,
+        painting: null,
+        pathSig: '',
+        markerSig: '',
+        traveledLen: -1,
+      };
+      const overrides = () => ({
+        blocked: [...state.blocked].map(parseKey),
+        cleared: [...state.cleared].map(parseKey),
+        closedPassages: [...state.closed],
+      });
+      const currentGrid = () => createGrid(state.map, overrides());
+
+      function toast(msg) {
+        const t = $('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toast.h);
+        toast.h = setTimeout(() => t.classList.remove('show'), 2200);
+      }
+
+      function selectMap(id) {
+        stopSim();
+        state.map = MAPS.find((m) => m.id === id);
+        state.blocked.clear();
+        state.cleared.clear();
+        state.closed = new Set(resolveClosed(state.map));
+        state.robot = { ...state.map.locations.find((l) => l.id === state.map.defaultStart).anchor };
+        state.trace = null;
+        state.clarifications = {};
+        state.events = [];
+        renderSidebar();
+        renderStatic();
+        renderDynamic();
+        renderInspector();
+        renderLog();
+      }
+      function stopSim() {
+        if (state.sim) {
+          const snap = state.sim.getSnapshot();
+          state.robot = { ...snap.currentCell };
+        }
+        state.sim = null;
+      }
+
+      /* ---------- 侧栏 ---------- */
+      function renderSidebar() {
+        const m = state.map;
+        $('presets').innerHTML = m.presets
+          .map(
+            (p, i) =>
+              `<button class="chip" data-preset="${i}" title="${esc(p.text)}"><span class="dot ${p.expect.outcome}"></span>${esc(p.label)}</button>`,
+          )
+          .join('');
+        $('passages').innerHTML =
+          m.passages
+            .map((p) => {
+              const on = state.closed.has(p.id);
+              return `<div class="list-item"><span class="sw" style="background:${on ? '#ff3b30' : '#0071e3'};opacity:${on ? 1 : 0.55}"></span><span class="grow">${esc(p.name)}</span><span class="state ${on ? 'on' : ''}">${on ? '已封闭' : '开放'}</span><button class="switch ${on ? 'on' : ''}" data-passage="${p.id}" role="switch" aria-checked="${on}" aria-label="封闭${esc(p.name)}"></button></div>`;
+            })
+            .join('') || '<div class="list-item"><span class="hint">本地图没有可开关的通道</span></div>';
+        $('locations').innerHTML = m.locations
+          .map(
+            (l) =>
+              `<div class="list-item"><span class="sw" style="background:${CATEGORY[l.category].color}"></span><span class="grow">${esc(l.name)}<span class="coord">${fmt(l.anchor)}</span></span><button class="link" data-goto="${l.id}">前往</button><button class="link" data-place="${l.id}">放置</button></div>`,
+          )
+          .join('');
+      }
+
+      /* ---------- 静态层：地面 / 立体障碍 / 地点 ---------- */
+      function rectPath(cells, inset = 0, r = 0) {
+        const s = CELL - 2 * inset;
+        if (!r)
+          return cells.map((c) => `M${c.x * CELL + inset} ${c.y * CELL + inset}h${s}v${s}h${-s}z`).join('');
+        return cells
+          .map((c) => {
+            const x = c.x * CELL + inset,
+              y = c.y * CELL + inset;
+            return `M${x + r} ${y}h${s - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${s - 2 * r}a${r} ${r} 0 0 1 ${-r} ${r}h${-(s - 2 * r)}a${r} ${r} 0 0 1 ${-r} ${-r}v${-(s - 2 * r)}a${r} ${r} 0 0 1 ${r} ${-r}z`;
+          })
+          .join('');
+      }
+      /* 墙体：把相邻墙格合并成圆角块（只在外露的角上倒圆） */
+      function wallPath(map, cells, inset, r) {
+        const isWall = (x, y) => terrainAt(map, { x, y }) === 'wall';
+        return cells
+          .map(({ x, y }) => {
+            const L = x * CELL,
+              T = y * CELL,
+              R = L + CELL,
+              B = T + CELL;
+            const up = isWall(x, y - 1),
+              dn = isWall(x, y + 1),
+              lf = isWall(x - 1, y),
+              rt = isWall(x + 1, y);
+            const rTL = !up && !lf ? r : 0,
+              rTR = !up && !rt ? r : 0,
+              rBR = !dn && !rt ? r : 0,
+              rBL = !dn && !lf ? r : 0;
+            const l = lf ? L : L + inset,
+              t = up ? T : T + inset,
+              rr = rt ? R : R - inset,
+              b = dn ? B : B - inset;
+            return `M${l + rTL} ${t}H${rr - rTR}${rTR ? `A${rTR} ${rTR} 0 0 1 ${rr} ${t + rTR}` : ''}V${b - rBR}${rBR ? `A${rBR} ${rBR} 0 0 1 ${rr - rBR} ${b}` : ''}H${l + rBL}${rBL ? `A${rBL} ${rBL} 0 0 1 ${l} ${b - rBL}` : ''}V${t + rTL}${rTL ? `A${rTL} ${rTL} 0 0 1 ${l + rTL} ${t}` : ''}Z`;
+          })
+          .join('');
+      }
+      function labelWidth(text) {
+        return [...text].reduce((w, ch) => w + (/[一-鿿]/.test(ch) ? 12 : 7.2), 0) + 26;
+      }
+      function renderStatic() {
+        const m = state.map,
+          W = m.width * CELL,
+          H = m.height * CELL;
+        const svg = $('map');
+        svg.setAttribute('viewBox', `${-PAD} ${-PAD} ${W + 2 * PAD} ${H + 2 * PAD}`);
+        const byKind = { wall: [], table: [], shelf: [], machine: [] };
+        for (let y = 0; y < m.height; y++)
+          for (let x = 0; x < m.width; x++) {
+            const k = terrainAt(m, { x, y });
+            if (k !== 'floor') byKind[k].push({ x, y });
+          }
+        const grad = (id, [a, b]) =>
+          `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
+        let s = `<defs>
+    <pattern id="tiles" width="${CELL * 2}" height="${CELL * 2}" patternUnits="userSpaceOnUse"><rect width="${CELL * 2}" height="${CELL * 2}" fill="${ART.floor}"/><rect width="${CELL}" height="${CELL}" fill="${ART.floorAlt}"/><rect x="${CELL}" y="${CELL}" width="${CELL}" height="${CELL}" fill="${ART.floorAlt}"/></pattern>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#ffd28a"/><rect width="3.5" height="7" fill="${ART.dyn}"/></pattern>
+    <pattern id="barrier" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="9" height="9" fill="#ffffff"/><rect width="4.5" height="9" fill="${ART.passageClosed}"/></pattern>
+    ${grad('gWall', ART.wallTop)}${grad('gTable', ART.tableTop)}${grad('gShelf', ART.shelfTop)}${grad('gMachine', ART.machineTop)}
+    <radialGradient id="gRobot" cx="0.38" cy="0.32" r="0.8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e5e5ea"/></radialGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.6" flood-color="#000" flood-opacity=".14"/></filter>
+    <filter id="lift" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="2.5" stdDeviation="2.6" flood-color="#000" flood-opacity=".18"/></filter>
+    <filter id="blur3" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="1.6"/></filter>
+  </defs>`;
+        s += `<rect x="-10" y="-10" width="${W + 20}" height="${H + 20}" rx="16" fill="#ffffff" filter="url(#lift)"/>`;
+        s += `<rect width="${W}" height="${H}" rx="6" fill="url(#tiles)"/>`;
+        let gl = '';
+        for (let x = 1; x < m.width; x++) gl += `M${x * CELL} 0V${H}`;
+        for (let y = 1; y < m.height; y++) gl += `M0 ${y * CELL}H${W}`;
+        s += `<path d="${gl}" stroke="${ART.grid}" stroke-width="1" fill="none"/>`;
+        // 地点区域：柔和底色
+        m.locations.forEach((l) => {
+          if (!l.area) return;
+          const c = CATEGORY[l.category].color,
+            a = l.area,
+            wide = l.category === 'storage' || l.category === 'corridor';
+          s += `<rect x="${a.x * CELL + 3}" y="${a.y * CELL + 3}" width="${a.w * CELL - 6}" height="${a.h * CELL - 6}" rx="10" fill="${c}" fill-opacity="${wide ? 0.05 : 0.1}" stroke="${c}" stroke-opacity="${wide ? 0.3 : 0.4}" stroke-width="1.2" ${wide ? 'stroke-dasharray="4 4"' : ''}/>`;
+        });
+        // 墙体：侧面 + 顶面渐变 + 顶部高光
+        if (byKind.wall.length) {
+          const d = wallPath(m, byKind.wall, 2, 6);
+          s += `<path d="${d}" fill="${ART.wallSide}" transform="translate(0 3.5)"/><path d="${d}" fill="url(#gWall)"/>`;
+        }
+        // 桌台
+        if (byKind.table.length) {
+          const d = rectPath(byKind.table, 3, 5);
+          s += `<path d="${d}" fill="${ART.tableSide}" transform="translate(0 3)"/><path d="${d}" fill="url(#gTable)"/><path d="${d}" fill="none" stroke="${ART.tableEdge}" stroke-width="1"/>`;
+          byKind.table.forEach((c) => {
+            s += `<rect x="${c.x * CELL + 9}" y="${c.y * CELL + 11}" width="14" height="9" rx="2" fill="#ffffff" fill-opacity=".55"/>`;
+          });
+        }
+        // 货架：木框 + 彩色货箱
+        if (byKind.shelf.length) {
+          const d = rectPath(byKind.shelf, 3, 4);
+          s += `<path d="${d}" fill="${ART.shelfSide}" transform="translate(0 3)"/><path d="${d}" fill="url(#gShelf)"/>`;
+          byKind.shelf.forEach((c, i) => {
+            const x = c.x * CELL,
+              y = c.y * CELL;
+            s += `<rect x="${x + 7}" y="${y + 7}" width="8" height="8" rx="1.5" fill="${BOX_COLORS[(c.x * 7 + c.y * 3) % 5]}"/><rect x="${x + 17}" y="${y + 9}" width="8" height="6" rx="1.5" fill="${BOX_COLORS[(c.x * 5 + c.y * 11 + 2) % 5]}"/>`;
+            s += `<rect x="${x + 6}" y="${y + 18}" width="20" height="1.4" rx=".7" fill="#ffffff" fill-opacity=".45"/><rect x="${x + 9}" y="${y + 20.5}" width="7" height="5" rx="1.2" fill="${BOX_COLORS[(c.x + c.y * 2 + i) % 5]}" opacity=".9"/>`;
+          });
+        }
+        // 设备：金属机箱 + 绿色指示灯
+        if (byKind.machine.length) {
+          const d = rectPath(byKind.machine, 3, 6);
+          s += `<path d="${d}" fill="${ART.machineSide}" transform="translate(0 3)"/><path d="${d}" fill="url(#gMachine)"/>`;
+          byKind.machine.forEach((c) => {
+            const x = c.x * CELL,
+              y = c.y * CELL;
+            s += `<rect x="${x + 8}" y="${y + 15}" width="16" height="2" rx="1" fill="#fff" fill-opacity=".45"/><rect x="${x + 8}" y="${y + 19.5}" width="11" height="2" rx="1" fill="#fff" fill-opacity=".3"/>`;
+            s += `<circle cx="${x + 23}" cy="${y + 10}" r="3.2" fill="${ART.led}" filter="url(#glow)" opacity=".7"/><circle cx="${x + 23}" cy="${y + 10}" r="2" fill="${ART.led}"/>`;
+          });
+        }
+        svg.innerHTML =
+          s +
+          '<g id="dynLayer"></g><g id="regionLayer"></g><g id="exploredLayer"></g><g id="labelLayer"></g><g id="pathLayer"></g><g id="traveledLayer"></g><g id="markerLayer"></g><g id="robotLayer"></g><g id="hoverLayer"></g><g id="coordLayer"></g>';
+        state.pathSig = '';
+        state.markerSig = '';
+        state.traveledLen = -1;
+        renderLabels();
+        renderCoords();
+      }
+      function renderLabels() {
+        const m = state.map;
+        let s = '';
+        m.locations.forEach((l) => {
+          const c = CATEGORY[l.category].color,
+            ax = (l.anchor.x + 0.5) * CELL,
+            ay = (l.anchor.y + 0.5) * CELL;
+          s += `<circle cx="${ax}" cy="${ay}" r="5.5" fill="#fff" stroke="${c}" stroke-width="2.4" filter="url(#soft)"/><circle cx="${ax}" cy="${ay}" r="1.8" fill="${c}"/>`;
+          const a = l.area || { x: l.anchor.x, y: l.anchor.y, w: 1, h: 1 };
+          const w = labelWidth(l.name),
+            cx = (a.x + a.w / 2) * CELL,
+            ty = Math.max(a.y * CELL + 2, 13);
+          s += `<g transform="translate(${cx - w / 2} ${ty - 13})" style="pointer-events:none"><rect width="${w}" height="22" rx="11" fill="#ffffff" fill-opacity=".94" filter="url(#soft)"/><rect width="${w}" height="22" rx="11" fill="none" stroke="rgba(0,0,0,.06)"/><circle cx="12" cy="11" r="4" fill="${c}"/><text x="21" y="15" font-size="11.5" font-weight="600" fill="${ART.text}" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif" letter-spacing="-.2">${esc(l.name)}</text></g>`;
+        });
+        $('labelLayer').innerHTML = s;
+      }
+      function renderCoords() {
+        const m = state.map;
+        let s = '';
+        if (state.showCoords) {
+          const font = `font-size="9.5" fill="#a1a1a6" font-family="'SF Mono',Menlo,Consolas,monospace"`;
+          for (let x = 0; x < m.width; x++)
+            s += `<text x="${(x + 0.5) * CELL}" y="-12" text-anchor="middle" ${font}>${x}</text>`;
+          for (let y = 0; y < m.height; y++)
+            s += `<text x="-12" y="${(y + 0.5) * CELL + 3}" text-anchor="end" ${font}>${y}</text>`;
+        }
+        $('coordLayer').innerHTML = s;
+      }
+
+      /* ---------- 动态层：用户修改 / 通道 / 区域 / 搜索 ---------- */
+      function lockIcon(cx, cy) {
+        return `<g transform="translate(${cx - 5} ${cy - 6})" style="pointer-events:none"><rect x="0" y="5" width="10" height="7.5" rx="2" fill="#fff"/><path d="M2.2 5.2V3.6a2.8 2.8 0 0 1 5.6 0v1.6" fill="none" stroke="#fff" stroke-width="1.6"/></g>`;
+      }
+      function renderDynamic() {
+        const m = state.map;
+        let s = '';
+        const dyn = [...state.blocked].map(parseKey);
+        if (dyn.length) {
+          const d = rectPath(dyn, 4, 5);
+          s += `<path d="${d}" fill="${ART.dynSide}" transform="translate(0 3)"/><path d="${d}" fill="url(#hatch)"/><path d="${d}" fill="none" stroke="${ART.dyn}" stroke-width="1.2"/>`;
+        }
+        [...state.cleared].map(parseKey).forEach((c) => {
+          s += `<rect x="${c.x * CELL + 4}" y="${c.y * CELL + 4}" width="${CELL - 8}" height="${CELL - 8}" rx="6" fill="rgba(48,209,88,.1)" stroke="${ART.cleared}" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+        });
+        m.passages.forEach((p) => {
+          const closed = state.closed.has(p.id);
+          if (closed) {
+            const d = rectPath(p.cells, 3, 6);
+            s += `<path d="${d}" fill="#b3261e" transform="translate(0 2.5)"/><path d="${d}" fill="url(#barrier)"/><path d="${d}" fill="none" stroke="${ART.passageClosed}" stroke-width="1.2"/>`;
+            p.cells.slice(0, 2).forEach((c) => {
+              s += `<circle cx="${(c.x + 0.5) * CELL}" cy="${(c.y + 0.5) * CELL}" r="8" fill="${ART.passageClosed}"/>${lockIcon((c.x + 0.5) * CELL, (c.y + 0.5) * CELL)}`;
+            });
+          } else
+            s += `<path d="${rectPath(p.cells, 4, 7)}" fill="rgba(0,113,227,.05)" stroke="${ART.passageOpen}" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+        });
+        $('dynLayer').innerHTML = s;
+        // 不可达区域
+        s = '';
+        const err = state.trace && state.trace.error;
+        const blockedErr = state.sim && state.sim.getSnapshot().blockedBy;
+        const ue =
+          (blockedErr && blockedErr.code === 'UNREACHABLE' ? blockedErr : null) ||
+          (err && err.code === 'UNREACHABLE' ? err : null);
+        if (ue) {
+          if (ue.details.startRegion)
+            s += `<path class="fade-in" d="${rectPath(ue.details.startRegion.map(parseKey), 2, 4)}" fill="${ART.regionStart}"/>`;
+          if (ue.details.goalRegion)
+            s += `<path class="fade-in" d="${rectPath(ue.details.goalRegion.map(parseKey), 2, 4)}" fill="${ART.regionGoal}"/>`;
+        }
+        $('regionLayer').innerHTML = s;
+        // 搜索区域
+        s = '';
+        const planData =
+          state.trace && state.trace.stages.plan.status === 'ok' ? state.trace.stages.plan.data : null;
+        if (state.showExplored && planData)
+          planData.segments.forEach((seg) => {
+            s += `<path class="fade-in" d="${rectPath(seg.explored, 6, 5)}" fill="${ART.explored}"/>`;
+          });
+        $('exploredLayer').innerHTML = s;
+        renderPath();
+      }
+
+      /* ---------- 路线：只在规划变化时重绘，逐格只更新“已走轨迹” ---------- */
+      const pts = (cells) => cells.map((c) => `${(c.x + 0.5) * CELL},${(c.y + 0.5) * CELL}`).join(' ');
+      function renderPath() {
+        const snap = state.sim ? state.sim.getSnapshot() : null;
+        const sig = snap ? `${snap.path.map(key).join(';')}|${snap.waypointIndices.join(',')}` : '';
+        const svg = $('map');
+        svg.dataset.path = snap ? snap.path.map(key).join(';') : '';
+        svg.dataset.steps = snap ? String(snap.path.length - 1) : '';
+        if (sig !== state.pathSig) {
+          state.pathSig = sig;
+          let s = '';
+          if (snap) {
+            let from = 0;
+            snap.waypointIndices.forEach((wi, i) => {
+              const cells = snap.path.slice(from, wi + 1);
+              from = wi;
+              if (cells.length < 2) return;
+              const col = SEGMENT_COLORS[i % SEGMENT_COLORS.length],
+                len = (cells.length - 1) * CELL + 2,
+                p = pts(cells);
+              s += `<g><polyline points="${p}" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity=".12"/>`;
+              s += `<polyline points="${p}" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".92" style="stroke-dasharray:${len};animation:drawIn .9s cubic-bezier(.25,.1,.25,1) both;--len:${len}"/></g>`;
+              s += `<polyline points="${p}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.01 18" class="path-flow" opacity=".75"/>`;
+            });
+          }
+          $('pathLayer').innerHTML = s;
+          state.traveledLen = -1;
+          state.markerSig = '';
+        }
+        renderTraveled(snap);
+        renderMarkers(snap);
+      }
+      function renderTraveled(snap) {
+        const len = snap ? snap.traveled.length : 0;
+        if (len === state.traveledLen) return;
+        state.traveledLen = len;
+        $('traveledLayer').innerHTML =
+          snap && len > 1
+            ? `<polyline points="${pts(snap.traveled)}" fill="none" stroke="${ART.traveled}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>`
+            : '';
+      }
+      function renderMarkers(snap) {
+        const sig = snap ? `${state.pathSig}#${snap.nextWaypoint}` : '';
+        if (sig === state.markerSig) return;
+        state.markerSig = sig;
+        let s = '';
+        if (snap) {
+          const st = snap.path[0];
+          s += `<g transform="translate(${(st.x + 0.5) * CELL} ${(st.y + 0.5) * CELL})" filter="url(#soft)"><circle r="9.5" fill="#fff"/><circle r="9.5" fill="none" stroke="#30d158" stroke-width="2"/><text y="3.8" font-size="10" font-weight="700" text-anchor="middle" fill="#248a3d" font-family="-apple-system,'PingFang SC','Microsoft YaHei',sans-serif">起</text></g>`;
+          snap.waypointIndices.forEach((wi, i) => {
+            const c = snap.path[wi];
+            if (!c) return;
+            const col = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+            const lbl = snap.waypointIndices.length === 1 ? '终' : String(i + 1),
+              done = i < snap.nextWaypoint;
+            s += `<g transform="translate(${(c.x + 0.5) * CELL} ${(c.y + 0.5) * CELL - 15})" filter="url(#soft)" opacity="${done ? 0.5 : 1}"><path d="M0 13 C-2 9 -9 6 -9 -1 A9 9 0 1 1 9 -1 C9 6 2 9 0 13 Z" fill="${col}"/><circle r="6" fill="#fff" fill-opacity=".22"/><text y="3.6" font-size="10" font-weight="700" text-anchor="middle" fill="#fff" font-family="-apple-system,'PingFang SC','Microsoft YaHei',sans-serif">${done ? '✓' : lbl}</text></g>`;
+          });
+        }
+        $('markerLayer').innerHTML = s;
+      }
+
+      /* ---------- 机器人（每帧命令式更新 transform） ---------- */
+      function ensureRobot() {
+        const layer = $('robotLayer');
+        if (!state.robot && !state.sim) {
+          layer.innerHTML = '';
+          return null;
+        }
+        let g = $('robot');
+        if (!g) {
+          layer.innerHTML = `<g id="robot" data-testid="robot" style="color:#0071e3">
+      <ellipse cx="0" cy="12" rx="11" ry="3.6" fill="rgba(0,0,0,.22)" filter="url(#blur3)"/>
+      <circle class="robot-halo" r="14" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <g id="robotBody">
+        <circle r="12" fill="url(#gRobot)"/>
+        <circle r="12" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="1"/>
+        <circle r="8.6" fill="none" stroke="currentColor" stroke-width="1.8" opacity=".9"/>
+        <path d="M6.2 -4.2 L11.4 0 L6.2 4.2 Z" fill="currentColor"/>
+        <circle cx="-1.5" cy="0" r="3.4" fill="#1d1d1f"/>
+        <circle cx="-0.4" cy="-1.1" r="1" fill="#fff" opacity=".9"/>
+      </g></g>`;
+          g = $('robot');
+        }
+        return g;
+      }
+      function drawRobot() {
+        const g = ensureRobot();
+        if (!g) return;
+        let pose,
+          status = 'idle',
+          cellK;
+        if (state.sim) {
+          const snap = state.sim.getSnapshot();
+          pose = snap.pose;
+          status = snap.status;
+          cellK = key(snap.currentCell);
+        } else {
+          pose = { x: state.robot.x, y: state.robot.y, headingDeg: state.heading };
+          cellK = key(state.robot);
+        }
+        const diff = ((pose.headingDeg - state.heading + 540) % 360) - 180;
+        state.heading = Math.abs(diff) < 0.5 ? pose.headingDeg : (state.heading + diff * 0.2 + 360) % 360;
+        g.setAttribute('transform', `translate(${(pose.x + 0.5) * CELL} ${(pose.y + 0.5) * CELL})`);
+        $('robotBody').setAttribute('transform', `rotate(${state.heading})`);
+        if (g.dataset.status !== status) {
+          g.style.color = STATUS_COLOR[status] || STATUS_COLOR.idle;
+          g.querySelector('.robot-halo').style.display = status === 'running' ? '' : 'none';
+          g.dataset.status = status;
+        }
+        g.dataset.cell = cellK;
+      }
+
+      /* ---------- 流水线面板 ---------- */
+      const STATUS_LABEL = { ok: '成功', error: '失败', skipped: '未执行', running: '进行中' };
+      const MATCH_LABEL = {
+        exact: '精确',
+        alias: '别名',
+        category: '类别词',
+        nearest: '最近',
+        fuzzy: '模糊',
+        clarified: '已澄清',
+        deictic: '指代',
+        robot: '机器人位置',
+      };
+      function stageCard(n, title, stage, body, testid) {
+        const st = stage.status;
+        return `<div class="stage ${st}" data-testid="${testid}" data-status="${st}"><div class="stage-h"><span class="n">${n}</span><span class="grow">${title}</span>${stage.durationMs !== undefined ? `<span class="ms">${stage.durationMs.toFixed(2)} ms</span>` : ''}<span class="pill ${st}">${STATUS_LABEL[st]}</span></div><div class="stage-b">${body}</div></div>`;
+      }
+      function errorBlock(e) {
+        const msg = describeError(e);
+        return `<div class="err-title">${esc(msg.title)} <span class="tag">${esc(e.code)}</span></div><div class="err-detail">${esc(msg.detail)}</div>`;
+      }
+      function highlight(norm, cmd) {
+        const marks = [
+          ...(cmd.start && cmd.start.span ? [{ ...cmd.start, cls: 'start' }] : []),
+          ...cmd.goals.filter((g) => g.span).map((g) => ({ ...g, cls: 'goal' })),
+        ].sort((a, b) => a.span[0] - b.span[0]);
+        let out = '',
+          i = 0;
+        marks.forEach((m) => {
+          if (m.span[0] < i) return;
+          out +=
+            esc(norm.slice(i, m.span[0])) +
+            `<mark class="${m.cls}">${esc(norm.slice(m.span[0], m.span[1]))}</mark>`;
+          i = m.span[1];
+        });
+        return out + esc(norm.slice(i));
+      }
+      function renderInspector() {
+        const tr = state.trace;
+        if (!tr) {
+          $('banner').innerHTML =
+            `<div class="banner info"><span class="ic">${ICONS.question}</span><div><div class="t">准备就绪</div><div class="d">输入指令或点击左侧预设。四个阶段的结果会分别显示，方便定位问题出在哪一环。</div></div></div>`;
+          $('stages').innerHTML = ['指令解析', '地点映射', '路径规划', '移动执行']
+            .map((t, i) =>
+              stageCard(i + 1, t, { status: 'skipped' }, '<span class="empty">等待指令</span>', `stage-${i}`),
+            )
+            .join('');
+          return;
+        }
+        const tone = tr.outcome === 'success' ? 'success' : tr.outcome;
+        const icon =
+          tr.outcome === 'success'
+            ? ICONS.check
+            : tr.outcome === 'clarification'
+              ? ICONS.question
+              : ICONS.alert;
+        let ban = `<div class="banner ${tone}" data-testid="outcome-banner" data-outcome="${tr.outcome}"><span class="ic">${icon}</span><div style="flex:1;min-width:0">`;
+        if (tr.error) {
+          const msg = describeError(tr.error);
+          ban += `<div class="t">${esc(msg.title)}</div><div class="d">${esc(msg.detail)}</div>`;
+        } else ban += `<div class="t">规划成功</div><div class="d">${esc(tr.summary)}</div>`;
+        if (tr.suggestions.length) {
+          ban +=
+            `<div class="chips">` +
+            tr.suggestions
+              .map((sg, i) => {
+                const label =
+                  sg.kind === 'chooseLocation'
+                    ? sg.label
+                    : sg.kind === 'openPassage'
+                      ? `打开「${sg.label}」并重试`
+                      : sg.kind === 'placeRobot'
+                        ? `把机器人放在「${sg.label}」`
+                        : `“${sg.example}”`;
+                return `<button class="chip" data-suggest="${i}" data-testid="suggestion-${i}" data-kind="${sg.kind}">${esc(label)}</button>`;
+              })
+              .join('') +
+            `</div>`;
+        }
+        $('banner').innerHTML = ban + '</div></div>';
+        const P = tr.stages.parse;
+        let body;
+        if (P.status === 'ok') {
+          const c = P.data;
+          body = `<div class="kv"><span class="k">句式</span><span><span class="tag" data-testid="parse-pattern">${c.pattern}</span> ${PATTERN_LABELS[c.pattern]}</span></div><div class="norm">${highlight(c.normalized, c)}</div>
+      <div class="kv"><span class="k">起点</span><span>${c.start ? esc(c.start.text) + (c.start.deictic ? ' <span class="tag">指代</span>' : '') : '<span class="hint">未说明 · 使用机器人当前位置</span>'}</span>
+      <span class="k">目标</span><span>${c.goals.map((g, i) => `${i + 1}. ${esc(g.text)}${g.modifier ? ' <span class="tag nearest">最近的</span>' : ''}${g.deictic ? ' <span class="tag">指代</span>' : ''}${g.lexical === 'unknown' ? ' <span class="tag">词表外</span>' : ''}`).join('<br>')}</span></div>
+      <details style="margin-top:8px"><summary class="hint">分词详情（${c.tokens.length}）</summary><div class="tokens">${c.tokens.map((t) => `<span class="tok"><b>${t.type}</b>${esc(t.text)}</span>`).join('')}</div></details>
+      ${c.notes.length ? `<ul class="notes">${c.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`;
+        } else body = P.status === 'error' ? errorBlock(P.error) : '<span class="empty">未执行</span>';
+        let html = stageCard(1, '指令解析', P, body, 'stage-parse');
+        const G = tr.stages.ground;
+        if (G.status === 'ok') {
+          const d = G.data,
+            rows = [['起点', d.start], ...d.goals.map((g, i) => [`目标 ${i + 1}`, g])];
+          body = `<table class="g"><tr><th>角色</th><th>原文</th><th>地点</th><th>停靠格</th><th>方式</th></tr>${rows.map(([r, p], i) => `<tr data-testid="ground-row-${i}" data-location-id="${p.locationId ?? ''}" data-match-type="${p.matchType}"><td>${r}</td><td>${esc(p.mentionText ?? '—')}</td><td><b>${esc(p.label)}</b></td><td class="mono">${fmt(p.cell)}</td><td><span class="tag ${p.matchType}">${MATCH_LABEL[p.matchType]}${p.confidence < 1 ? ' ' + p.confidence : ''}</span></td></tr>`).join('')}</table>
+      ${d.notes.length ? `<ul class="notes">${d.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`;
+        } else body = G.status === 'error' ? errorBlock(G.error) : '<span class="empty">未执行</span>';
+        html += stageCard(2, '地点映射', G, body, 'stage-ground');
+        const L = tr.stages.plan;
+        if (L.status === 'ok') {
+          const d = L.data;
+          body = `<div class="kv"><span class="k">总步数</span><span><b data-testid="plan-total-steps">${d.totalSteps}</b> 步 · 拐弯 ${d.totalTurns} 次 · 扩展 ${d.expandedNodes} 个节点</span></div>
+      <table class="g" style="margin-top:6px"><tr><th>段</th><th>起 → 止</th><th>步数</th><th>拐弯</th></tr>${d.segments.map((sg, i) => `<tr><td><span class="seg-sw" style="background:${SEGMENT_COLORS[i % SEGMENT_COLORS.length]}"></span>${i + 1}</td><td class="mono">${fmt(sg.from)} → ${fmt(sg.to)}</td><td>${sg.steps}</td><td>${sg.turns}</td></tr>`).join('')}</table>
+      ${d.notes.length ? `<ul class="notes">${d.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`;
+        } else
+          body =
+            L.status === 'error'
+              ? errorBlock(L.error) +
+                (L.error.code === 'UNREACHABLE'
+                  ? '<div class="hint" style="margin-top:6px">地图上蓝色为起点可达区域，粉色为目标所在区域。</div>'
+                  : '')
+              : '<span class="empty">未执行</span>';
+        html += stageCard(3, '路径规划', L, body, 'stage-plan');
+        html += `<div id="execCard"></div>`;
+        $('stages').innerHTML = html;
+        renderExec();
+      }
+      const SIM_LABEL = {
+        ready: '就绪',
+        running: '移动中',
+        dwelling: '到达途经点',
+        paused: '已暂停',
+        arrived: '已到达',
+        blocked: '被阻断',
+      };
+      function renderExec() {
+        const el = $('execCard');
+        $('playBtn').innerHTML =
+          state.sim && ['running', 'dwelling'].includes(state.sim.getSnapshot().status)
+            ? ICONS.pause
+            : ICONS.play;
+        if (!el) return;
+        if (!state.sim) {
+          el.innerHTML = stageCard(
+            4,
+            '移动执行',
+            { status: 'skipped' },
+            '<span class="empty">规划成功后自动播放</span>',
+            'stage-exec',
+          );
+          $('retryBtn').style.display = 'none';
+          return;
+        }
+        const s = state.sim.getSnapshot();
+        const st = s.status === 'blocked' ? 'error' : s.status === 'arrived' ? 'ok' : 'running';
+        let body = `<div class="kv"><span class="k">状态</span><span><b>${SIM_LABEL[s.status]}</b></span><span class="k">当前格</span><span class="mono">${fmt(s.currentCell)}</span>
+    <span class="k">进度</span><span>${Math.round(s.progress * 100)}% · 已走 ${s.traveled.length - 1} 步 · 途经点 ${Math.min(s.nextWaypoint, s.waypointIndices.length)}/${s.waypointIndices.length}</span>
+    <span class="k">重规划</span><span>${s.replanCount} 次</span></div>`;
+        if (s.blockedBy) body += `<div style="margin-top:8px">${errorBlock(s.blockedBy)}</div>`;
+        el.innerHTML = stageCard(4, '移动执行', { status: st }, body, 'stage-exec');
+        $('progressBar').style.width = `${s.progress * 100}%`;
+        $('retryBtn').style.display = s.status === 'blocked' ? '' : 'none';
+      }
+      const EVENT_DOT = {
+        started: 'clarification',
+        waypointReached: 'clarification',
+        arrived: 'success',
+        replanned: 'failed',
+        blocked: 'unreachable',
+      };
+      function renderLog() {
+        $('log').innerHTML = state.events.length
+          ? state.events
+              .slice(-60)
+              .reverse()
+              .map(
+                (e) =>
+                  `<div class="log-item" data-event-type="${e.type}"><span class="time">${(e.atMs / 1000).toFixed(1)}s</span><span class="dot ${EVENT_DOT[e.type]}" style="${e.type === 'replanned' ? 'background:#ff9f0a' : ''}"></span><span>${e.text}</span></div>`,
+              )
+              .join('')
+          : '<div class="hint">暂无事件</div>';
+      }
+      function logEvents(events) {
+        const labels = state.simGoals;
+        let logged = false,
+          pathChanged = false,
+          needsExec = false;
+        for (const e of events) {
+          let text = null;
+          if (e.type === 'started') text = '开始移动';
+          else if (e.type === 'waypointReached')
+            text = `到达第 ${e.waypoint + 1} 个目标「${esc(labels[e.waypoint] || '')}」${fmt(e.cell)}`;
+          else if (e.type === 'arrived') {
+            text = '已到达终点';
+            toast('已到达终点');
+          } else if (e.type === 'replanned') {
+            text = `检测到障碍，从 ${fmt(e.from)} 重新规划（路程 ${e.deltaSteps >= 0 ? '+' : ''}${e.deltaSteps} 步）`;
+            toast('前方出现障碍，已重新规划');
+            pathChanged = true;
+          } else if (e.type === 'blocked') {
+            text = `${esc(describeError(e.error).title)}：机器人停在 ${fmt(e.cell)}`;
+            toast('无路可走，机器人已停下');
+            pathChanged = true;
+          }
+          if (text) {
+            state.events.push({ atMs: e.atMs, text, type: e.type });
+            logged = true;
+          }
+          needsExec = true;
+        }
+        if (logged) renderLog();
+        if (pathChanged) renderDynamic();
+        else if (events.length && state.sim) {
+          const snap = state.sim.getSnapshot();
+          renderTraveled(snap);
+          renderMarkers(snap);
+        }
+        if (needsExec) renderExec();
+      }
+
+      /* =====================================================================
+       * 10. 交互
+       * ===================================================================== */
+      function runCommand(text, { keepClarifications = false } = {}) {
+        if (!keepClarifications) state.clarifications = {};
+        if (state.sim) stopSim();
+        state.lastText = text;
+        if (text.trim() && state.history[state.history.length - 1] !== text) state.history.push(text);
+        state.historyIdx = -1;
+        const req = {
+          mapId: state.map.id,
+          text,
+          robotCell: state.robot ? { ...state.robot } : null,
+          overrides: overrides(),
+          clarifications: { ...state.clarifications },
+          options: { parser: 'rule', startPolicy: 'teleport' },
+        };
+        const tr = navigate(req);
+        state.trace = tr;
+        state.events = [];
+        if (tr.outcome === 'success') {
+          const g = tr.stages.ground.data,
+            plan = tr.stages.plan.data;
+          if (g.startSource === 'command' && (!state.robot || !eq(state.robot, g.start.cell)))
+            toast(`机器人已就位：${g.start.label}`);
+          state.robot = { ...g.start.cell };
+          state.simGoals = g.goals.map((x) => x.label);
+          state.sim = createSimulator({
+            grid: currentGrid(),
+            plan,
+            goals: g.goals.map((x) => x.cell),
+            speed: state.speed,
+          });
+          state.heading = state.sim.getSnapshot().pose.headingDeg;
+          state.pathSig = '';
+          logEvents(state.sim.start());
+        } else {
+          state.sim = null;
+        }
+        renderInspector();
+        renderDynamic();
+        renderLog();
+        drawRobot();
+        window.__lastTrace = tr;
+        return tr;
+      }
+      function applySuggestion(sg) {
+        if (sg.kind === 'chooseLocation') {
+          state.clarifications[sg.mentionText] = sg.locationId;
+          runCommand(state.lastText, { keepClarifications: true });
+        } else if (sg.kind === 'openPassage') {
+          state.closed.delete(sg.passageId);
+          renderSidebar();
+          runCommand(state.lastText, { keepClarifications: true });
+        } else if (sg.kind === 'placeRobot') {
+          state.robot = { ...state.map.locations.find((l) => l.id === sg.locationId).anchor };
+          runCommand(state.lastText, { keepClarifications: true });
+        } else if (sg.kind === 'rephrase') {
+          $('cmd').value = sg.example;
+          updateCounter();
+          runCommand(sg.example);
+        }
+      }
+      function onGridChanged() {
+        renderSidebar();
+        renderDynamic();
+        if (state.sim) logEvents(state.sim.updateGrid(currentGrid()));
+      }
+      function simBusy() {
+        const st = state.sim && state.sim.getSnapshot().status;
+        return st === 'running' || st === 'dwelling' || st === 'paused';
+      }
+      function updateCounter() {
+        $('counter').textContent = `${[...$('cmd').value].length}/100`;
+      }
+
+      function cellFromEvent(ev) {
+        const svg = $('map');
+        const ctm = svg.getScreenCTM();
+        if (!ctm) return null;
+        const p = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(ctm.inverse());
+        const c = { x: Math.floor(p.x / CELL), y: Math.floor(p.y / CELL) };
+        return c.x >= 0 && c.y >= 0 && c.x < state.map.width && c.y < state.map.height ? c : null;
+      }
+      function toggleObstacle(c, action) {
+        const m = state.map,
+          k = key(c);
+        if (state.sim && state.sim.isCellLocked(c) && simBusy()) {
+          toast('机器人所在或即将进入的格子不能放置障碍');
+          return false;
+        }
+        if (!state.sim && state.robot && eq(state.robot, c)) {
+          toast('不能在机器人所在格放置障碍');
+          return false;
+        }
+        const base = terrainAt(m, c) !== 'floor';
+        if (base) {
+          const want = action ?? (state.cleared.has(k) ? 'add' : 'remove');
+          if (want === 'remove') state.cleared.add(k);
+          else state.cleared.delete(k);
+          return want;
+        }
+        const want = action ?? (state.blocked.has(k) ? 'remove' : 'add');
+        if (want === 'add') state.blocked.add(k);
+        else state.blocked.delete(k);
+        return want;
+      }
+      function onMapPointerDown(ev) {
+        const c = cellFromEvent(ev);
+        if (!c) return;
+        if (state.mode === 'place') {
+          if (simBusy()) {
+            toast('运行中不能移动机器人');
+            return;
+          }
+          if (currentGrid().isBlocked(c)) {
+            toast('不能把机器人放在障碍上');
+            return;
+          }
+          state.sim = null;
+          state.robot = c;
+          state.trace = null;
+          renderInspector();
+          renderDynamic();
+          drawRobot();
+          toast(`机器人已放置在 ${fmt(c)}`);
+          return;
+        }
+        if (state.mode === 'edit') {
+          const p = state.map.passages.find((pp) => pp.cells.some((pc) => eq(pc, c)));
+          if (p) {
+            if (state.closed.has(p.id)) state.closed.delete(p.id);
+            else state.closed.add(p.id);
+            onGridChanged();
+            return;
+          }
+          const action = toggleObstacle(c, null);
+          if (action) {
+            state.painting = action;
+            $('map').setPointerCapture(ev.pointerId);
+            onGridChanged();
+          }
+          return;
+        }
+        const l = state.map.locations.find((x) => (x.area ? rectHas(x.area, c) : eq(x.anchor, c)));
+        if (l) {
+          $('cmd').value = `去${l.name}`;
+          updateCounter();
+          $('cmd').focus();
+        }
+      }
+      function onMapPointerMove(ev) {
+        const c = cellFromEvent(ev);
+        const tip = $('tooltip');
+        if (!c) {
+          tip.style.display = 'none';
+          $('hoverLayer').innerHTML = '';
+          return;
+        }
+        if (
+          state.painting &&
+          state.mode === 'edit' &&
+          !state.map.passages.some((p) => p.cells.some((pc) => eq(pc, c)))
+        ) {
+          const k = key(c);
+          const already =
+            terrainAt(state.map, c) !== 'floor'
+              ? (state.painting === 'remove') === state.cleared.has(k)
+              : (state.painting === 'add') === state.blocked.has(k);
+          if (!already && toggleObstacle(c, state.painting)) onGridChanged();
+        }
+        if ($('hoverLayer').dataset.cell !== key(c)) {
+          $('hoverLayer').dataset.cell = key(c);
+          $('hoverLayer').innerHTML =
+            `<rect x="${c.x * CELL + 1.5}" y="${c.y * CELL + 1.5}" width="${CELL - 3}" height="${CELL - 3}" rx="7" fill="rgba(0,113,227,.06)" stroke="#0071e3" stroke-opacity=".55" stroke-width="1.5"/>`;
+        }
+        const g = currentGrid();
+        const loc = state.map.locations.find((x) => (x.area ? rectHas(x.area, c) : eq(x.anchor, c)));
+        const pass = state.map.passages.find((p) => p.cells.some((pc) => eq(pc, c)));
+        const terr = { floor: '地面', wall: '墙体', table: '桌台', shelf: '货架', machine: '设备' }[
+          terrainAt(state.map, c)
+        ];
+        tip.textContent = `${fmt(c)} · ${g.isBlocked(c) ? '不可通行' : '可通行'} · ${state.blocked.has(key(c)) ? '临时障碍' : terr}${loc ? ' · ' + loc.name + (eq(loc.anchor, c) ? '（停靠点）' : '') : ''}${pass ? ' · ' + pass.name + (state.closed.has(pass.id) ? '（封闭）' : '') : ''}`;
+        const wrap = $('mapWrap').getBoundingClientRect();
+        tip.style.left = `${ev.clientX - wrap.left}px`;
+        tip.style.top = `${ev.clientY - wrap.top}px`;
+        tip.style.display = 'block';
+      }
+
+      function frame(ts) {
+        const dt = state.lastFrame ? Math.min(100, ts - state.lastFrame) : 0;
+        state.lastFrame = ts;
+        if (state.sim) {
+          const ev = state.sim.advance(dt);
+          if (ev.length) logEvents(ev);
+        }
+        drawRobot();
+        if (state.sim && ts - (frame.last || 0) > 120) {
+          frame.last = ts;
+          $('progressBar').style.width = `${state.sim.getSnapshot().progress * 100}%`;
+        }
+        requestAnimationFrame(frame);
+      }
+
+      function setupVoice() {
+        const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const btn = $('voiceBtn');
+        btn.innerHTML = ICONS.mic;
+        if (!Ctor) {
+          btn.disabled = true;
+          btn.title = '当前浏览器不支持语音识别（请使用 Chrome 或 Edge）';
+          return;
+        }
+        let rec = null;
+        btn.addEventListener('click', () => {
+          if (rec) {
+            rec.stop();
+            return;
+          }
+          rec = new Ctor();
+          rec.lang = 'zh-CN';
+          rec.interimResults = true;
+          rec.continuous = false;
+          btn.classList.add('listening');
+          $('voiceHint').textContent = '正在聆听…';
+          rec.onresult = (e) => {
+            let text = '';
+            for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+            $('cmd').value = text;
+            updateCounter();
+            if (e.results[e.results.length - 1].isFinal) {
+              rec.stop();
+              runCommand(text);
+            }
+          };
+          rec.onerror = (e) => {
+            toast(
+              {
+                'not-allowed': '麦克风权限被拒绝',
+                network: '语音服务不可用（国内网络建议使用 Edge）',
+                'no-speech': '没有听到声音',
+              }[e.error] || `语音识别出错：${e.error}`,
+            );
+          };
+          rec.onend = () => {
+            btn.classList.remove('listening');
+            $('voiceHint').textContent = '回车执行 · ↑↓ 历史';
+            rec = null;
+          };
+          rec.start();
+        });
+      }
+      function moveSegThumb() {
+        const active = $('modeSeg').querySelector('button.active'),
+          thumb = $('segThumb');
+        thumb.style.width = `${active.offsetWidth}px`;
+        thumb.style.transform = `translateX(${active.offsetLeft - 2}px)`;
+      }
+
+      function init() {
+        $('mapSelect').innerHTML = MAPS.map(
+          (m) => `<option value="${m.id}">${m.name} · ${m.width}×${m.height}</option>`,
+        ).join('');
+        $('mapSelect').addEventListener('change', (e) => selectMap(e.target.value));
+        $('runBtn').addEventListener('click', () => runCommand($('cmd').value));
+        $('cmd').addEventListener('input', updateCounter);
+        $('cmd').addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+            e.preventDefault();
+            runCommand($('cmd').value);
+          }
+          if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && state.history.length) {
+            e.preventDefault();
+            const n = state.history.length;
+            state.historyIdx =
+              e.key === 'ArrowUp'
+                ? state.historyIdx <= 0
+                  ? n - 1
+                  : state.historyIdx - 1
+                : (state.historyIdx + 1) % n;
+            $('cmd').value = state.history[state.historyIdx];
+            updateCounter();
+          }
+        });
+        document.body.addEventListener('click', (e) => {
+          const t = e.target.closest('[data-preset],[data-passage],[data-goto],[data-place],[data-suggest]');
+          if (!t) return;
+          if (t.dataset.preset !== undefined) {
+            const p = state.map.presets[+t.dataset.preset];
+            state.sim = null;
+            state.blocked.clear();
+            state.cleared.clear();
+            state.closed = new Set(p.setup.closedPassages ?? resolveClosed(state.map));
+            state.robot = {
+              ...state.map.locations.find((l) => l.id === (p.setup.robotAt || state.map.defaultStart)).anchor,
+            };
+            renderSidebar();
+            renderDynamic();
+            $('cmd').value = p.text;
+            updateCounter();
+            runCommand(p.text);
+          } else if (t.dataset.passage) {
+            const id = t.dataset.passage;
+            if (state.closed.has(id)) state.closed.delete(id);
+            else state.closed.add(id);
+            onGridChanged();
+          } else if (t.dataset.goto) {
+            const l = state.map.locations.find((x) => x.id === t.dataset.goto);
+            $('cmd').value = `去${l.name}`;
+            updateCounter();
+            runCommand(`去${l.name}`);
+          } else if (t.dataset.place) {
+            if (simBusy()) {
+              toast('运行中不能移动机器人');
+              return;
+            }
+            state.sim = null;
+            state.trace = null;
+            state.robot = { ...state.map.locations.find((x) => x.id === t.dataset.place).anchor };
+            renderInspector();
+            renderDynamic();
+            drawRobot();
+          } else if (t.dataset.suggest !== undefined)
+            applySuggestion(state.trace.suggestions[+t.dataset.suggest]);
+        });
+        $('modeSeg').addEventListener('click', (e) => {
+          const b = e.target.closest('button');
+          if (!b) return;
+          state.mode = b.dataset.mode;
+          [...$('modeSeg').querySelectorAll('button')].forEach((x) => x.classList.toggle('active', x === b));
+          $('map').setAttribute('class', `map mode-${state.mode}`);
+          moveSegThumb();
+        });
+        window.addEventListener('resize', moveSegThumb);
+        const svg = $('map');
+        svg.addEventListener('pointerdown', onMapPointerDown);
+        svg.addEventListener('pointermove', onMapPointerMove);
+        svg.addEventListener('pointerup', () => {
+          state.painting = null;
+        });
+        svg.addEventListener('pointerleave', () => {
+          $('tooltip').style.display = 'none';
+          $('hoverLayer').innerHTML = '';
+          $('hoverLayer').dataset.cell = '';
+        });
+        $('showExplored').addEventListener('change', (e) => {
+          state.showExplored = e.target.checked;
+          renderDynamic();
+        });
+        $('showCoords').addEventListener('change', (e) => {
+          state.showCoords = e.target.checked;
+          renderCoords();
+        });
+        $('clearObs').addEventListener('click', () => {
+          state.blocked.clear();
+          state.cleared.clear();
+          onGridChanged();
+        });
+        $('removeRobot').addEventListener('click', () => {
+          if (simBusy()) {
+            toast('运行中不能移除机器人');
+            return;
+          }
+          state.sim = null;
+          state.robot = null;
+          state.trace = null;
+          renderInspector();
+          renderDynamic();
+          drawRobot();
+          toast('已移除机器人，可演示“未设置起点”的提示');
+        });
+        const togglePlay = () => {
+          if (!state.sim) return;
+          const st = state.sim.getSnapshot().status;
+          if (st === 'running' || st === 'dwelling') logEvents(state.sim.pause());
+          else if (st === 'paused') logEvents(state.sim.resume());
+          else if (st === 'arrived' && state.lastText)
+            runCommand(state.lastText, { keepClarifications: true });
+          renderExec();
+        };
+        $('stepBtn').innerHTML = ICONS.step;
+        $('resetBtn').innerHTML = ICONS.reset;
+        $('playBtn').innerHTML = ICONS.play;
+        $('playBtn').addEventListener('click', togglePlay);
+        $('stepBtn').addEventListener('click', () => {
+          if (!state.sim) return;
+          const st = state.sim.getSnapshot().status;
+          if (st === 'running') state.sim.pause();
+          logEvents(state.sim.step());
+          renderExec();
+        });
+        $('resetBtn').addEventListener('click', () => {
+          if (state.lastText && state.trace && state.trace.outcome === 'success') {
+            state.robot = { ...state.trace.stages.ground.data.start.cell };
+            runCommand(state.lastText, { keepClarifications: true });
+          }
+        });
+        $('retryBtn').addEventListener('click', () => {
+          if (state.sim) logEvents(state.sim.retry());
+        });
+        $('speed').addEventListener('input', (e) => {
+          state.speed = +e.target.value;
+          $('speedLabel').textContent = `${state.speed} 格/秒`;
+          if (state.sim) state.sim.setSpeed(state.speed);
+        });
+        $('copyBtn').addEventListener('click', async () => {
+          const payload = JSON.stringify(
+            {
+              trace: state.trace,
+              snapshot: state.sim ? state.sim.getSnapshot() : null,
+              map: state.map.id,
+              overrides: overrides(),
+              robot: state.robot,
+            },
+            null,
+            2,
+          );
+          try {
+            await navigator.clipboard.writeText(payload);
+            toast('调试信息已复制');
+          } catch {
+            console.log(payload);
+            toast('无法访问剪贴板，已输出到控制台');
+          }
+        });
+        document.addEventListener('keydown', (e) => {
+          if (
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.tagName === 'INPUT' ||
+            e.target.tagName === 'SELECT'
+          )
+            return;
+          if (e.key === ' ') {
+            e.preventDefault();
+            togglePlay();
+          }
+          if (e.key === '.') $('stepBtn').click();
+          if (e.key === 'r' || e.key === 'R') $('resetBtn').click();
+          if (e.key === '/') {
+            e.preventDefault();
+            $('cmd').focus();
+          }
+        });
+        setupVoice();
+        const params = new URLSearchParams(location.search);
+        if (params.get('debug') === '1') {
+          $('showCoords').checked = true;
+          state.showCoords = true;
+          $('showExplored').checked = true;
+          state.showExplored = true;
+        }
+        selectMap(
+          params.get('map') && MAPS.some((m) => m.id === params.get('map')) ? params.get('map') : MAPS[0].id,
+        );
+        requestAnimationFrame(() => {
+          moveSegThumb();
+          requestAnimationFrame(frame);
+        });
+      }
+
+      /* 自检：在控制台执行 __selfTest() 可跑全部预设并核对期望结果与黄金步数 */
+      window.__selfTest = function () {
+        const rows = [];
+        for (const m of MAPS)
+          for (const p of m.presets) {
+            const robot = m.locations.find((l) => l.id === (p.setup.robotAt || m.defaultStart)).anchor;
+            const tr = navigate({
+              mapId: m.id,
+              text: p.text,
+              robotCell: robot,
+              overrides: { blocked: [], cleared: [], closedPassages: p.setup.closedPassages },
+              clarifications: {},
+            });
+            const steps = tr.stages.plan.status === 'ok' ? tr.stages.plan.data.totalSteps : null;
+            const pass =
+              tr.outcome === p.expect.outcome && (p.expect.steps === undefined || steps === p.expect.steps);
+            rows.push({
+              map: m.id,
+              preset: p.label,
+              text: p.text,
+              expect: `${p.expect.outcome}${p.expect.steps !== undefined ? '/' + p.expect.steps : ''}`,
+              got: `${tr.outcome}${steps !== null ? '/' + steps : ''}`,
+              pass,
+            });
+          }
+        console.table(rows);
+        return rows;
+      };
+      window.__nlnav = {
+        MAPS,
+        navigate,
+        parseCommand,
+        buildParseContext,
+        groundCommand,
+        planRoute,
+        createGrid,
+        createSimulator,
+        state,
+        toggleObstacle,
+        onGridChanged,
+      };
+      init();
+    </script>
+  </body>
+</html>
