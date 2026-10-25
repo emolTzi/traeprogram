@@ -279,6 +279,83 @@
         color: var(--text-3);
         font-size: 12px;
       }
+      .cmd-hint {
+        display: block;
+        margin-top: 8px;
+      }
+
+      /* ---------- 大模型接口 ---------- */
+      .llm-panel {
+        margin-top: 10px;
+        padding: 12px;
+        border-radius: var(--r-md);
+        background: var(--fill-2);
+        display: grid;
+        gap: 8px;
+      }
+      .llm-panel[hidden] {
+        display: none;
+      }
+      .llm-title {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+      }
+      .llm-title .sub {
+        color: var(--text-3);
+        font-weight: 400;
+        font-size: 11.5px;
+      }
+      .llm-panel .field {
+        display: grid;
+        grid-template-columns: 60px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-2);
+      }
+      .llm-panel input {
+        width: 100%;
+        min-width: 0;
+        border: none;
+        border-radius: 8px;
+        background: var(--surface-solid);
+        box-shadow: inset 0 0 0 1px var(--separator);
+        padding: 6px 9px;
+        font: 12px/1.4 var(--mono);
+        color: var(--text);
+        outline: none;
+        transition: box-shadow 0.2s var(--ease);
+      }
+      .llm-panel input:focus {
+        box-shadow:
+          0 0 0 3px rgba(0, 113, 227, 0.18),
+          inset 0 0 0 1px rgba(0, 113, 227, 0.5);
+      }
+      .llm-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
+      }
+      .llm-status {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      .btn.round.active {
+        background: var(--accent-soft);
+        color: var(--accent);
+        box-shadow: inset 0 0 0 1px rgba(0, 113, 227, 0.35);
+      }
+      .btn.round.loading {
+        animation: breathe 1.2s var(--ease) infinite;
+      }
 
       /* ---------- 按钮 ---------- */
       .btn {
@@ -1934,9 +2011,60 @@
                 title="语音输入（Chrome / Edge）"
                 aria-label="语音输入"
               ></button>
-              <span class="hint" id="voiceHint">回车执行 · ↑↓ 历史</span>
+              <button
+                class="btn round"
+                id="llmBtn"
+                data-testid="llm-toggle"
+                title="AI 解析：关（大模型）"
+                aria-label="AI 解析开关"
+              ></button>
+              <button
+                class="btn round"
+                id="llmCfgBtn"
+                data-testid="llm-settings"
+                title="大模型接口设置（OpenAI 兼容）"
+                aria-label="大模型接口设置"
+              ></button>
               <span class="spacer"></span>
               <button class="btn primary" id="runBtn" data-testid="command-submit">执行</button>
+            </div>
+            <span class="hint cmd-hint" id="voiceHint">回车执行 · ↑↓ 历史 · AI 解析：关</span>
+            <div class="llm-panel" id="llmPanel" hidden>
+              <div class="llm-title">大模型接口<span class="sub">OpenAI 兼容</span></div>
+              <label class="field"
+                ><span>接口地址</span
+                ><input
+                  id="llmBase"
+                  data-testid="llm-base"
+                  placeholder="https://api.openai.com/v1"
+                  autocomplete="off"
+                  spellcheck="false"
+              /></label>
+              <label class="field"
+                ><span>API Key</span
+                ><input
+                  id="llmKey"
+                  data-testid="llm-key"
+                  type="password"
+                  placeholder="sk-...（本地接口可留空）"
+                  autocomplete="off"
+              /></label>
+              <label class="field"
+                ><span>模型</span
+                ><input
+                  id="llmModel"
+                  data-testid="llm-model"
+                  placeholder="gpt-4o-mini"
+                  autocomplete="off"
+                  spellcheck="false"
+              /></label>
+              <div class="llm-actions">
+                <span class="llm-status" id="llmStatus">未配置接口</span>
+                <span class="spacer"></span>
+                <button class="btn small" id="llmTest" data-testid="llm-test">测试</button>
+                <button class="btn primary small" id="llmSave" data-testid="llm-save">保存并启用</button>
+              </div>
+              <div class="hint">密钥只保存在本机浏览器；接口需允许跨域访问（CORS）。</div>
             </div>
           </div>
         </section>
@@ -3788,6 +3916,8 @@
         rotR: '<svg class="icon" viewBox="0 0 24 24"><path d="M15 7h5V2"/><path d="M19.4 7A8 8 0 1 0 20 12"/></svg>',
         topView: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3 3 7.5 12 12l9-4.5z"/><path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5"/></svg>',
         target: '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+        spark: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3.5l1.7 4.6 4.6 1.7-4.6 1.7L12 16.1l-1.7-4.6-4.6-1.7 4.6-1.7z"/><path d="M18 16l.8 2.2L21 19l-2.2.8L18 22l-.8-2.2L15 19l2.2-.8z"/></svg>',
+        gear: '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.2M12 18.3v2.2M4.9 7.5l1.9 1.1M17.2 15.4l1.9 1.1M4.9 16.5l1.9-1.1M17.2 8.6l1.9-1.1"/></svg>',
       };
 
       /* =====================================================================
@@ -3852,6 +3982,7 @@
         simGoals: [],
         clarifications: {},
         lastText: '',
+        lastParse: null,
         history: [],
         historyIdx: -1,
         events: [],
@@ -4470,23 +4601,246 @@
       }
 
       /* =====================================================================
+       * 9.5 大模型（OpenAI 兼容）自然语言转写
+       * ===================================================================== */
+      const LLM_KEY = 'nlnav-llm';
+      const LLM_DEFAULTS = {
+        enabled: false,
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: '',
+        model: 'gpt-4o-mini',
+        timeoutMs: 30000,
+      };
+      function readLLMConfig() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(LLM_KEY) || '{}');
+          return { ...LLM_DEFAULTS, ...saved, enabled: !!saved.enabled };
+        } catch {
+          return { ...LLM_DEFAULTS };
+        }
+      }
+      const llm = { config: readLLMConfig(), abort: null, runSeq: 0 };
+      const isLocalEndpoint = (url) =>
+        /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(?::|\/|$)/i.test(String(url || ''));
+      const llmReady = () =>
+        Boolean(
+          llm.config.baseUrl &&
+            llm.config.model &&
+            (llm.config.apiKey || isLocalEndpoint(llm.config.baseUrl)),
+        );
+      const llmEndpoint = (baseUrl = llm.config.baseUrl) => {
+        const base = String(baseUrl || '').trim().replace(/\/+$/, '');
+        return /\/chat\/completions$/.test(base) ? base : `${base}/chat/completions`;
+      };
+      const llmHint = () => `回车执行 · ↑↓ 历史 · AI 解析：${llm.config.enabled ? '开' : '关'}`;
+      function saveLLMConfig(patch) {
+        llm.config = { ...llm.config, ...patch };
+        try {
+          localStorage.setItem(LLM_KEY, JSON.stringify(llm.config));
+        } catch {}
+        renderLLM();
+      }
+      function renderLLM() {
+        const btn = $('llmBtn');
+        if (!btn) return;
+        btn.classList.toggle('active', llm.config.enabled);
+        btn.title = `AI 解析：${llm.config.enabled ? '开' : '关'}（大模型）`;
+        $('llmStatus').textContent = llm.config.enabled
+          ? `已启用 · ${llm.config.model}`
+          : llmReady()
+            ? '已配置，未启用'
+            : '未配置接口';
+        $('voiceHint').textContent = llmHint();
+      }
+      function openLLMPanel() {
+        $('llmBase').value = llm.config.baseUrl;
+        $('llmKey').value = llm.config.apiKey;
+        $('llmModel').value = llm.config.model;
+        $('llmPanel').hidden = false;
+        renderLLM();
+        $('llmBase').focus();
+      }
+      function llmPrompt(map) {
+        const places = map.locations
+          .map((l) => {
+            const aliases = (l.aliases || []).filter((a) => a && a !== l.name);
+            return `- ${l.name}${aliases.length ? `（别名：${aliases.join('、')}）` : ''}`;
+          })
+          .join('\n');
+        return [
+          '你是 NLNav 的自然语言导航指令转换器。把用户的口语指令改写为 NLNav 规则解析器能识别的标准指令。',
+          `当前地图：${map.name}。可用地点如下（只能使用这些名称）：`,
+          places,
+          '只输出一个 JSON 对象，不要 Markdown，不要解释：',
+          '{"command":"标准指令","intent":"navigate","confidence":0.9,"notes":"简短说明"}',
+          '标准指令的写法：',
+          '1. 去<地点>：未说明起点时使用机器人当前位置；',
+          '2. 从<起点>去<目标>；',
+          '3. 先去<地点A>，再去<地点B>，最后回到<地点C>：按用户提到的顺序保留多个目标；',
+          '4. <起点>到<目标>。',
+          '约束：',
+          '- 地点优先使用上面列出的名称，找不到对应地点时保留用户原词，不要编造；',
+          '- 忽略语气词、礼貌用语和与导航无关的诉求，只保留导航信息；',
+          `- 一次最多 ${LIMITS.MAX_WAYPOINTS} 个目标；`,
+          '- 没有导航意图时 intent 输出 "none"，command 输出空字符串；',
+          '- 不要输出否定、绕开或规避类指令。',
+        ].join('\n');
+      }
+      function llmHttpError(status, text) {
+        const reason =
+          status === 401 || status === 403
+            ? '鉴权失败，请检查 API Key'
+            : status === 404
+              ? '接口地址不存在，请检查 Base URL'
+              : status === 429
+                ? '请求过于频繁或额度不足'
+                : `接口返回 ${status}`;
+        let detail = '';
+        try {
+          detail = JSON.parse(text)?.error?.message || '';
+        } catch {}
+        return detail ? `${reason}（${detail}）` : reason;
+      }
+      async function llmRequest(messages, { signal } = {}) {
+        const url = llmEndpoint();
+        const base = { model: llm.config.model, messages, temperature: 0, stream: false };
+        const call = async (jsonMode) => {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(llm.config.apiKey ? { Authorization: `Bearer ${llm.config.apiKey}` } : {}),
+            },
+            body: JSON.stringify({ ...base, ...(jsonMode ? { response_format: { type: 'json_object' } } : {}) }),
+            signal,
+          });
+          if (res.ok) return { ok: true, data: await res.json() };
+          return { ok: false, status: res.status, text: await res.text().catch(() => '') };
+        };
+        let r = await call(true);
+        // 部分兼容实现不支持 response_format，去掉后重试一次
+        if (!r.ok && r.status === 400 && /response_format|json_object/i.test(r.text)) r = await call(false);
+        if (!r.ok) throw new Error(llmHttpError(r.status, r.text));
+        return String(r.data?.choices?.[0]?.message?.content ?? '');
+      }
+      function parseLLMContent(content) {
+        const cleaned = String(content || '')
+          .trim()
+          .replace(/^```(?:json)?/i, '')
+          .replace(/```$/, '')
+          .trim();
+        const a = cleaned.indexOf('{'),
+          b = cleaned.lastIndexOf('}');
+        if (a < 0 || b <= a) return null;
+        try {
+          return JSON.parse(cleaned.slice(a, b + 1));
+        } catch {
+          return null;
+        }
+      }
+      async function llmParse(text, map, { signal } = {}) {
+        const content = await llmRequest(
+          [
+            { role: 'system', content: llmPrompt(map) },
+            { role: 'user', content: text },
+          ],
+          { signal },
+        );
+        const data = parseLLMContent(content);
+        if (!data || typeof data !== 'object') throw new Error('返回内容不是有效 JSON');
+        const command = String(data.command || '').trim();
+        if (data.intent === 'none' || !command)
+          return { ok: false, reason: '未能识别导航意图', raw: content };
+        return {
+          ok: true,
+          command,
+          confidence: Number.isFinite(data.confidence) ? data.confidence : null,
+          notes: String(data.notes || '').trim(),
+          raw: content,
+        };
+      }
+
+      /* =====================================================================
        * 10. 交互
        * ===================================================================== */
-      function runCommand(text, { keepClarifications = false } = {}) {
+      async function runCommand(text, { keepClarifications = false } = {}) {
         if (!keepClarifications) state.clarifications = {};
         if (state.sim) stopSim();
         state.lastText = text;
         if (text.trim() && state.history[state.history.length - 1] !== text) state.history.push(text);
         state.historyIdx = -1;
+        const runId = ++llm.runSeq;
+        if (llm.abort) {
+          llm.abort.abort();
+          llm.abort = null;
+        }
+        let canonical = text,
+          llmInfo = null;
+        const cached = keepClarifications && state.lastParse?.raw === text ? state.lastParse : null;
+        if (cached) {
+          canonical = cached.command;
+          llmInfo = cached.llm;
+        } else if (llm.config.enabled && text.trim()) {
+          if (!llmReady()) toast('AI 解析未配置接口，已回退规则解析');
+          else {
+            const ctrl = new AbortController();
+            llm.abort = ctrl;
+            const timer = setTimeout(() => ctrl.abort(), llm.config.timeoutMs);
+            $('voiceHint').textContent = 'AI 解析中…';
+            $('runBtn').disabled = true;
+            $('llmBtn').classList.add('loading');
+            try {
+              const r = await llmParse(text, state.map, { signal: ctrl.signal });
+              if (runId !== llm.runSeq) return null;
+              if (r.ok) {
+                canonical = r.command;
+                llmInfo = r;
+              } else toast('AI 未识别到导航意图，已回退规则解析');
+            } catch (e) {
+              if (runId !== llm.runSeq) return null;
+              toast(`AI 解析失败：${e.name === 'AbortError' ? '请求超时' : e.message}，已回退规则解析`);
+            } finally {
+              clearTimeout(timer);
+              if (llm.abort === ctrl) llm.abort = null;
+              if (runId === llm.runSeq) {
+                $('runBtn').disabled = false;
+                $('llmBtn').classList.remove('loading');
+                $('voiceHint').textContent = llmHint();
+              }
+            }
+          }
+        }
+        if (runId !== llm.runSeq) return null;
+        state.lastParse = llmInfo ? { raw: text, command: canonical, llm: llmInfo } : null;
         const req = {
           mapId: state.map.id,
-          text,
+          text: canonical,
           robotCell: state.robot ? { ...state.robot } : null,
           overrides: overrides(),
           clarifications: { ...state.clarifications },
-          options: { parser: 'rule', startPolicy: 'teleport' },
+          options: { parser: llmInfo ? 'llm' : 'rule', startPolicy: 'teleport' },
         };
         const tr = navigate(req);
+        if (llmInfo) {
+          tr.source = 'llm';
+          tr.parser = {
+            requested: 'llm',
+            used: 'llm',
+            fallback: null,
+            model: llm.config.model,
+            confidence: llmInfo.confidence,
+          };
+          if (tr.stages.parse.status === 'ok') {
+            const d = tr.stages.parse.data;
+            d.raw = text;
+            d.parser = 'llm';
+            d.notes = [
+              `AI 转写为标准指令：${canonical}`,
+              ...(llmInfo.notes ? [`AI 说明：${llmInfo.notes}`] : []),
+              ...d.notes,
+            ];
+          }
+        }
         state.trace = tr;
         state.events = [];
         if (tr.outcome === 'success') {
@@ -4722,7 +5076,7 @@
           };
           rec.onend = () => {
             btn.classList.remove('listening');
-            $('voiceHint').textContent = '回车执行 · ↑↓ 历史';
+            $('voiceHint').textContent = llmHint();
             rec = null;
           };
           rec.start();
@@ -4756,6 +5110,54 @@
           }
         }
         applyTheme(THEMES[savedTheme] ? savedTheme : 'apple', false);
+        $('llmBtn').innerHTML = ICONS.spark;
+        $('llmCfgBtn').innerHTML = ICONS.gear;
+        $('llmBtn').addEventListener('click', () => {
+          if (!llmReady()) {
+            openLLMPanel();
+            toast('请先填写接口地址、模型与 API Key');
+            return;
+          }
+          saveLLMConfig({ enabled: !llm.config.enabled });
+          toast(llm.config.enabled ? '已启用 AI 解析' : '已关闭 AI 解析，使用规则解析');
+        });
+        $('llmCfgBtn').addEventListener('click', () => {
+          if ($('llmPanel').hidden) openLLMPanel();
+          else $('llmPanel').hidden = true;
+        });
+        $('llmSave').addEventListener('click', () => {
+          const baseUrl = $('llmBase').value.trim();
+          const apiKey = $('llmKey').value.trim();
+          const model = $('llmModel').value.trim();
+          if (!/^https?:\/\/.+/.test(baseUrl) || !model) {
+            toast('请填写正确的接口地址与模型名');
+            return;
+          }
+          const ready = Boolean(apiKey || isLocalEndpoint(baseUrl));
+          saveLLMConfig({ baseUrl, apiKey, model, enabled: ready });
+          $('llmPanel').hidden = true;
+          toast(ready ? '已保存并启用 AI 解析' : '已保存，请补充 API Key 后再启用');
+        });
+        $('llmTest').addEventListener('click', async () => {
+          const baseUrl = $('llmBase').value.trim();
+          const apiKey = $('llmKey').value.trim();
+          const model = $('llmModel').value.trim();
+          if (!/^https?:\/\/.+/.test(baseUrl) || !model) {
+            toast('请填写正确的接口地址与模型名');
+            return;
+          }
+          saveLLMConfig({ baseUrl, apiKey, model });
+          $('llmStatus').textContent = '测试中…';
+          try {
+            await llmRequest([{ role: 'user', content: '只回复 OK 两个字母。' }]);
+            $('llmStatus').textContent = '连接成功';
+            toast('接口连接成功');
+          } catch (e) {
+            $('llmStatus').textContent = '连接失败';
+            toast(`接口连接失败：${e.message}`);
+          }
+        });
+        renderLLM();
         $('runBtn').addEventListener('click', () => runCommand($('cmd').value));
         $('cmd').addEventListener('input', updateCounter);
         $('cmd').addEventListener('keydown', (e) => {
@@ -5820,6 +6222,18 @@
         applyTheme,
         generateRandomMap,
         loadRandomMap,
+        // OpenAI 兼容接口：可在控制台或外部脚本中直接配置、测试与调用
+        llm: {
+          getConfig: () => ({ ...llm.config }),
+          configure: (patch = {}) => {
+            saveLLMConfig(patch);
+            return { ...llm.config };
+          },
+          isReady: llmReady,
+          endpoint: () => llmEndpoint(),
+          chat: (messages) => llmRequest(messages),
+          parse: (text, mapId) => llmParse(text, MAPS.find((m) => m.id === mapId) || state.map),
+        },
       };
       init();
     </script>
