@@ -41,6 +41,18 @@
         --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.05), 0 16px 40px rgba(0, 0, 0, 0.07);
         --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
         --spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+        /* 主题可覆盖的场景令牌 */
+        --header-bg: rgba(251, 251, 253, 0.72);
+        --map-bg: linear-gradient(180deg, #f0f1f4, #e8eaef);
+        --stage3d-bg: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eef0f4 55%, #e1e4ea 100%);
+        --plate: #ffffff;
+        --label-bg: rgba(255, 255, 255, 0.95);
+        --label-text: var(--text);
+        --label-stroke: rgba(0, 0, 0, 0.06);
+        --label-radius: 999px;
+        --glass-bg: rgba(255, 255, 255, 0.72);
+        --thumb-bg: #ffffff;
+        --on-accent: #ffffff;
       }
       * {
         box-sizing: border-box;
@@ -89,7 +101,7 @@
         gap: 14px;
         height: 56px;
         padding: 0 24px;
-        background: rgba(251, 251, 253, 0.72);
+        background: var(--header-bg);
         backdrop-filter: saturate(180%) blur(20px);
         -webkit-backdrop-filter: saturate(180%) blur(20px);
         border-bottom: 0.5px solid var(--separator);
@@ -521,7 +533,7 @@
         bottom: 2px;
         left: 2px;
         border-radius: 8px;
-        background: #fff;
+        background: var(--thumb-bg);
         box-shadow:
           0 3px 8px rgba(0, 0, 0, 0.12),
           0 3px 1px rgba(0, 0, 0, 0.04);
@@ -580,7 +592,7 @@
       .map-wrap {
         position: relative;
         border-radius: var(--r-md);
-        background: linear-gradient(180deg, #f0f1f4, #e8eaef);
+        background: var(--map-bg);
         padding: 14px;
         overflow: hidden;
       }
@@ -633,7 +645,19 @@
         background: var(--accent);
         transition: width 0.15s linear;
       }
+      /* 固定宽度 + 等宽数字：拖动速度时文字宽度不变，滑块和进度条不再抖动 */
+      .speed-label {
+        display: inline-block;
+        width: 7.2em;
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      .speed input[type='range'] {
+        flex: none;
+      }
       .speed {
+        flex: none;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -760,11 +784,11 @@
         margin-top: 10px;
       }
       .banner .chip {
-        background: rgba(255, 255, 255, 0.85);
+        background: var(--surface-solid);
         box-shadow: 0 0 0 0.5px var(--separator);
       }
       .banner .chip:hover {
-        background: #fff;
+        background: var(--surface-solid);
         box-shadow: var(--shadow-1);
       }
 
@@ -1102,7 +1126,7 @@
         overflow: hidden;
         perspective: 1800px;
         perspective-origin: 50% 42%;
-        background: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eef0f4 55%, #e1e4ea 100%);
+        background: var(--stage3d-bg);
         cursor: grab;
         touch-action: none;
         user-select: none;
@@ -1138,7 +1162,7 @@
         top: 0;
         display: block;
         border-radius: 3px;
-        box-shadow: 0 0 0 7px #ffffff;
+        box-shadow: 0 0 0 7px var(--plate);
       }
       .plate-side {
         position: absolute;
@@ -1200,14 +1224,14 @@
         gap: 6px;
         white-space: nowrap;
         padding: 4px 11px 4px 8px;
-        border-radius: 999px;
+        border-radius: var(--label-radius);
         font-size: 12px;
         font-weight: 600;
-        color: var(--text);
-        background: rgba(255, 255, 255, 0.95);
+        color: var(--label-text);
+        background: var(--label-bg);
         box-shadow:
           0 6px 18px rgba(0, 0, 0, 0.12),
-          0 0 0 0.5px rgba(0, 0, 0, 0.06);
+          0 0 0 1px var(--label-stroke);
       }
       .label3d i {
         width: 8px;
@@ -1327,7 +1351,7 @@
         border-left: 6px solid currentColor;
       }
       .glass {
-        background: rgba(255, 255, 255, 0.72);
+        background: var(--glass-bg);
         backdrop-filter: saturate(180%) blur(20px);
         -webkit-backdrop-filter: saturate(180%) blur(20px);
         box-shadow:
@@ -1386,6 +1410,487 @@
           transition: none;
         }
       }
+
+      /* =====================================================================
+       * 主题：通过 html[data-theme] 覆盖令牌；地图美术由 JS 中的 THEMES 调色板同步切换
+       * ===================================================================== */
+      .theme-select {
+        min-width: 120px;
+      }
+      html,
+      body {
+        transition: background-color 0.4s var(--ease), color 0.4s var(--ease);
+      }
+
+      /* ---------- 赛博朋克：深紫夜色 + 霓虹品红/青 + 发光描边 ---------- */
+      :root[data-theme='cyber'] {
+        --bg: #07040f;
+        --surface: rgba(20, 12, 40, 0.84);
+        --surface-solid: #160d2e;
+        --fill: rgba(0, 240, 255, 0.1);
+        --fill-2: rgba(0, 240, 255, 0.055);
+        --separator: rgba(0, 240, 255, 0.2);
+        --text: #ece6ff;
+        --text-2: #a99bd9;
+        --text-3: #6f62a3;
+        --accent: #ff2bd6;
+        --accent-hover: #ff5ce0;
+        --accent-soft: rgba(255, 43, 214, 0.16);
+        --green: #39ff14;
+        --green-soft: rgba(57, 255, 20, 0.12);
+        --orange: #f7f700;
+        --orange-soft: rgba(247, 247, 0, 0.12);
+        --red: #ff2b4e;
+        --red-soft: rgba(255, 43, 78, 0.15);
+        --blue: #00f0ff;
+        --blue-soft: rgba(0, 240, 255, 0.13);
+        --font: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        --mono: 'Cascadia Code', Consolas, monospace;
+        --r-lg: 6px;
+        --r-md: 4px;
+        --shadow-1: 0 0 0 1px rgba(0, 240, 255, 0.28), 0 0 22px rgba(255, 43, 214, 0.12);
+        --header-bg: rgba(10, 6, 22, 0.8);
+        --map-bg: linear-gradient(180deg, #120a26, #07040f);
+        --stage3d-bg: radial-gradient(120% 90% at 50% 0%, #2c1356 0%, #0e0822 58%, #05030b 100%);
+        --plate: #0b0618;
+        --label-bg: rgba(16, 9, 36, 0.94);
+        --label-text: #ece6ff;
+        --label-stroke: rgba(0, 240, 255, 0.55);
+        --label-radius: 3px;
+        --glass-bg: rgba(16, 9, 36, 0.78);
+        --thumb-bg: #2a1650;
+        --on-accent: #07040f;
+      }
+      :root[data-theme='cyber'] body {
+        background-image:
+          linear-gradient(rgba(0, 240, 255, 0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 43, 214, 0.045) 1px, transparent 1px);
+        background-size: 34px 34px;
+      }
+      :root[data-theme='cyber'] header {
+        border-bottom: 1px solid rgba(255, 43, 214, 0.45);
+        box-shadow: 0 0 24px rgba(255, 43, 214, 0.18);
+      }
+      :root[data-theme='cyber'] .brand {
+        text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+        letter-spacing: 0.06em;
+      }
+      :root[data-theme='cyber'] .brand-mark {
+        background: linear-gradient(145deg, #ff2bd6, #00f0ff);
+        box-shadow: 0 0 14px rgba(255, 43, 214, 0.7);
+      }
+      :root[data-theme='cyber'] .card-h {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--blue);
+      }
+      :root[data-theme='cyber'] .btn.primary,
+      :root[data-theme='cyber'] .btn.filled {
+        background: var(--accent);
+        color: var(--on-accent);
+        box-shadow: 0 0 14px rgba(255, 43, 214, 0.6);
+      }
+      :root[data-theme='cyber'] .progress > div {
+        background: linear-gradient(90deg, #ff2bd6, #00f0ff);
+        box-shadow: 0 0 10px #00f0ff;
+      }
+
+      /* ---------- 水墨：宣纸底 + 墨色 + 朱砂印章红 + 宋体 ---------- */
+      :root[data-theme='ink'] {
+        --bg: #f1ece1;
+        --surface: rgba(250, 246, 238, 0.92);
+        --surface-solid: #faf6ee;
+        --fill: rgba(36, 33, 30, 0.07);
+        --fill-2: rgba(36, 33, 30, 0.045);
+        --separator: rgba(36, 33, 30, 0.2);
+        --text: #24211e;
+        --text-2: #5e5850;
+        --text-3: #968e82;
+        --accent: #b5322a;
+        --accent-hover: #9c2a23;
+        --accent-soft: rgba(181, 50, 42, 0.1);
+        --green: #4a6b4a;
+        --green-soft: rgba(74, 107, 74, 0.12);
+        --orange: #8a6d3b;
+        --orange-soft: rgba(138, 109, 59, 0.13);
+        --red: #b5322a;
+        --red-soft: rgba(181, 50, 42, 0.1);
+        --blue: #4a5d6e;
+        --blue-soft: rgba(74, 93, 110, 0.12);
+        --font: 'Songti SC', 'STSong', 'SimSun', 'Noto Serif SC', serif;
+        --r-lg: 4px;
+        --r-md: 3px;
+        --shadow-1: 0 0 0 1px rgba(36, 33, 30, 0.14), 0 6px 18px rgba(60, 50, 30, 0.06);
+        --header-bg: rgba(244, 239, 228, 0.88);
+        --map-bg: linear-gradient(180deg, #ebe4d4, #e2d9c6);
+        --stage3d-bg: radial-gradient(120% 90% at 50% 0%, #faf6ee 0%, #ece5d6 58%, #dcd2bd 100%);
+        --plate: #faf6ee;
+        --label-bg: rgba(250, 246, 238, 0.96);
+        --label-text: #24211e;
+        --label-stroke: rgba(36, 33, 30, 0.4);
+        --label-radius: 2px;
+        --glass-bg: rgba(250, 246, 238, 0.82);
+        --thumb-bg: #faf6ee;
+      }
+      :root[data-theme='ink'] body {
+        background-image:
+          radial-gradient(60% 50% at 12% 8%, rgba(36, 33, 30, 0.07), transparent 70%),
+          radial-gradient(45% 40% at 92% 92%, rgba(36, 33, 30, 0.06), transparent 70%);
+        background-attachment: fixed;
+      }
+      :root[data-theme='ink'] header {
+        border-bottom: 1px solid rgba(36, 33, 30, 0.55);
+      }
+      :root[data-theme='ink'] .brand {
+        letter-spacing: 0.12em;
+        font-weight: 700;
+      }
+      :root[data-theme='ink'] .brand-mark,
+      :root[data-theme='ink'] .card-h .step {
+        background: var(--accent);
+        border-radius: 3px;
+        box-shadow: none;
+      }
+      :root[data-theme='ink'] .card-h {
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        border-bottom: 1px solid var(--separator);
+        margin: 0 18px 10px;
+        padding: 14px 0 8px;
+      }
+      :root[data-theme='ink'] .btn.primary,
+      :root[data-theme='ink'] .btn.filled {
+        background: #24211e;
+        color: #faf6ee;
+        box-shadow: none;
+      }
+      :root[data-theme='ink'] .progress > div {
+        background: #24211e;
+      }
+
+      /* ---------- 构成主义：米白底 + 红黑粗块 + 直角 + 硬阴影 ---------- */
+      :root[data-theme='constructivist'] {
+        --bg: #efe6d2;
+        --surface: #f7f0de;
+        --surface-solid: #fffaf0;
+        --fill: rgba(17, 17, 17, 0.08);
+        --fill-2: rgba(17, 17, 17, 0.05);
+        --separator: rgba(17, 17, 17, 0.6);
+        --text: #111111;
+        --text-2: #3a3a3a;
+        --text-3: #6b6457;
+        --accent: #d4202a;
+        --accent-hover: #b81a23;
+        --accent-soft: rgba(212, 32, 42, 0.12);
+        --green: #1f6f43;
+        --green-soft: rgba(31, 111, 67, 0.13);
+        --orange: #c99a10;
+        --orange-soft: rgba(232, 185, 35, 0.2);
+        --red: #d4202a;
+        --red-soft: rgba(212, 32, 42, 0.12);
+        --blue: #2b4c8c;
+        --blue-soft: rgba(43, 76, 140, 0.13);
+        --font: 'Arial Black', 'Impact', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        --r-sm: 0;
+        --r-md: 0;
+        --r-lg: 0;
+        --r-xl: 0;
+        --shadow-1: 6px 6px 0 #111111;
+        --header-bg: #111111;
+        --map-bg: repeating-linear-gradient(135deg, #e6dcc4 0 14px, #ebe2cc 14px 28px);
+        --stage3d-bg: linear-gradient(160deg, #efe6d2 0 62%, #d4202a 62% 66%, #efe6d2 66%);
+        --plate: #f7f0de;
+        --label-bg: #111111;
+        --label-text: #efe6d2;
+        --label-stroke: #111111;
+        --label-radius: 0;
+        --glass-bg: rgba(247, 240, 222, 0.94);
+        --thumb-bg: #d4202a;
+      }
+      :root[data-theme='constructivist'] body {
+        background-image: linear-gradient(118deg, transparent 0 74%, rgba(212, 32, 42, 0.16) 74% 82%, transparent 82%);
+        background-attachment: fixed;
+      }
+      :root[data-theme='constructivist'] header {
+        color: #efe6d2;
+        border-bottom: 6px solid #d4202a;
+      }
+      :root[data-theme='constructivist'] .brand-sub {
+        color: #d4202a;
+        font-weight: 700;
+      }
+      :root[data-theme='constructivist'] .brand-mark {
+        border-radius: 0;
+        background: #d4202a;
+        box-shadow: none;
+        transform: rotate(-12deg);
+      }
+      :root[data-theme='constructivist'] .card {
+        border: 3px solid #111111;
+      }
+      :root[data-theme='constructivist'] .card-h {
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 3px solid #111111;
+        margin-bottom: 12px;
+      }
+      :root[data-theme='constructivist'] .card-h .step,
+      :root[data-theme='constructivist'] .dot,
+      :root[data-theme='constructivist'] .stage-h .n {
+        border-radius: 0;
+      }
+      :root[data-theme='constructivist'] .btn,
+      :root[data-theme='constructivist'] .chip,
+      :root[data-theme='constructivist'] .select,
+      :root[data-theme='constructivist'] .switch,
+      :root[data-theme='constructivist'] .switch::after,
+      :root[data-theme='constructivist'] .seg,
+      :root[data-theme='constructivist'] .seg button,
+      :root[data-theme='constructivist'] .seg-thumb,
+      :root[data-theme='constructivist'] .pill,
+      :root[data-theme='constructivist'] .toast {
+        border-radius: 0;
+      }
+      :root[data-theme='constructivist'] .btn.primary {
+        box-shadow: 3px 3px 0 #111111;
+      }
+      :root[data-theme='constructivist'] .seg button.active {
+        color: #ffffff;
+      }
+      :root[data-theme='constructivist'] header .select,
+      :root[data-theme='constructivist'] header .seg {
+        background-color: #efe6d2;
+      }
+      :root[data-theme='constructivist'] .progress > div {
+        background: #d4202a;
+      }
+
+      /* ---------- 黑客：纯黑 + 荧光绿 + 等宽字体 + 扫描线 ---------- */
+      :root[data-theme='hacker'] {
+        --bg: #000000;
+        --surface: rgba(2, 14, 6, 0.9);
+        --surface-solid: #03140a;
+        --fill: rgba(0, 255, 102, 0.1);
+        --fill-2: rgba(0, 255, 102, 0.05);
+        --separator: rgba(0, 255, 102, 0.25);
+        --text: #7dffaa;
+        --text-2: #3fcf74;
+        --text-3: #23804a;
+        --accent: #00ff66;
+        --accent-hover: #4dff94;
+        --accent-soft: rgba(0, 255, 102, 0.14);
+        --green: #00ff66;
+        --green-soft: rgba(0, 255, 102, 0.12);
+        --orange: #ffd400;
+        --orange-soft: rgba(255, 212, 0, 0.12);
+        --red: #ff3333;
+        --red-soft: rgba(255, 51, 51, 0.13);
+        --blue: #00d4ff;
+        --blue-soft: rgba(0, 212, 255, 0.12);
+        --font: 'Cascadia Code', Consolas, 'Courier New', 'Microsoft YaHei', monospace;
+        --mono: 'Cascadia Code', Consolas, monospace;
+        --r-sm: 2px;
+        --r-md: 2px;
+        --r-lg: 2px;
+        --shadow-1: 0 0 0 1px rgba(0, 255, 102, 0.35);
+        --header-bg: rgba(0, 0, 0, 0.9);
+        --map-bg: #000000;
+        --stage3d-bg: radial-gradient(120% 90% at 50% 0%, #062a12 0%, #010a04 60%, #000 100%);
+        --plate: #000000;
+        --label-bg: rgba(0, 0, 0, 0.92);
+        --label-text: #00ff66;
+        --label-stroke: rgba(0, 255, 102, 0.65);
+        --label-radius: 0;
+        --glass-bg: rgba(0, 12, 4, 0.85);
+        --thumb-bg: #0b3a1c;
+        --on-accent: #000000;
+      }
+      :root[data-theme='hacker'] body {
+        text-shadow: 0 0 6px rgba(0, 255, 102, 0.35);
+      }
+      :root[data-theme='hacker'] body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        pointer-events: none;
+        background: repeating-linear-gradient(0deg, rgba(0, 255, 102, 0.035) 0 1px, transparent 1px 3px);
+      }
+      :root[data-theme='hacker'] .brand::before {
+        content: '> ';
+        color: var(--accent);
+      }
+      :root[data-theme='hacker'] .brand-mark {
+        display: none;
+      }
+      :root[data-theme='hacker'] .card-h::before {
+        content: '#';
+        color: var(--text-3);
+      }
+      :root[data-theme='hacker'] .btn.primary,
+      :root[data-theme='hacker'] .btn.filled {
+        background: var(--accent);
+        color: #000000;
+        text-shadow: none;
+      }
+      :root[data-theme='hacker'] .card,
+      :root[data-theme='hacker'] .btn,
+      :root[data-theme='hacker'] .chip,
+      :root[data-theme='hacker'] .select,
+      :root[data-theme='hacker'] .seg,
+      :root[data-theme='hacker'] .seg button,
+      :root[data-theme='hacker'] .seg-thumb {
+        border-radius: 2px;
+      }
+      :root[data-theme='hacker'] .switch::after {
+        border-radius: 1px;
+        background: var(--accent);
+      }
+      :root[data-theme='hacker'] .switch {
+        border-radius: 2px;
+      }
+
+      /* ---------- 信息密集：紧凑排版、细边框、小字号、更多内容同屏 ---------- */
+      :root[data-theme='dense'] {
+        --bg: #e9ecf0;
+        --surface: #ffffff;
+        --fill: rgba(60, 70, 90, 0.08);
+        --fill-2: rgba(60, 70, 90, 0.05);
+        --separator: rgba(60, 70, 90, 0.18);
+        --text: #14181f;
+        --text-2: #4b5563;
+        --text-3: #8a94a3;
+        --accent: #0a6cff;
+        --accent-hover: #0057d6;
+        --r-sm: 3px;
+        --r-md: 4px;
+        --r-lg: 6px;
+        --shadow-1: 0 0 0 1px rgba(60, 70, 90, 0.16);
+        --header-bg: #14181f;
+        --map-bg: #f3f5f8;
+        --label-radius: 3px;
+      }
+      :root[data-theme='dense'] body {
+        font-size: 12px;
+      }
+      :root[data-theme='dense'] header {
+        height: 42px;
+        padding: 0 12px;
+        color: #e6e9ef;
+      }
+      :root[data-theme='dense'] .brand {
+        font-size: 14px;
+      }
+      :root[data-theme='dense'] .brand-sub {
+        color: #8a94a3;
+      }
+      :root[data-theme='dense'] header .select,
+      :root[data-theme='dense'] header .seg {
+        background-color: #2a303b;
+        color: #e6e9ef;
+      }
+      :root[data-theme='dense'] header .seg button {
+        color: #aab3c0;
+      }
+      :root[data-theme='dense'] header .seg button.active {
+        color: #14181f;
+      }
+      :root[data-theme='dense'] .main {
+        grid-template-columns: 250px minmax(0, 1fr) 340px;
+        gap: 8px;
+        padding: 8px;
+        max-width: none;
+      }
+      :root[data-theme='dense'] .card + .card {
+        margin-top: 8px;
+      }
+      :root[data-theme='dense'] .card-h {
+        padding: 7px 10px 5px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-2);
+      }
+      :root[data-theme='dense'] .card-b {
+        padding: 0 10px 10px;
+      }
+      :root[data-theme='dense'] textarea {
+        min-height: 54px;
+        font-size: 13px;
+        padding: 8px 10px 20px;
+      }
+      :root[data-theme='dense'] .chips {
+        gap: 4px;
+      }
+      :root[data-theme='dense'] .chip {
+        padding: 3px 8px 3px 6px;
+        font-size: 11.5px;
+        border-radius: 3px;
+      }
+      :root[data-theme='dense'] .btn {
+        border-radius: 3px;
+        padding: 4px 10px;
+        font-size: 12px;
+      }
+      :root[data-theme='dense'] .btn.round {
+        width: 28px;
+        height: 28px;
+      }
+      :root[data-theme='dense'] .btn.round.lg {
+        width: 32px;
+        height: 32px;
+      }
+      :root[data-theme='dense'] .list-item {
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+      :root[data-theme='dense'] .stage {
+        margin-bottom: 6px;
+      }
+      :root[data-theme='dense'] .stage-h {
+        padding: 5px 8px;
+        font-size: 12px;
+      }
+      :root[data-theme='dense'] .stage-b {
+        padding: 0 8px 8px;
+        font-size: 11.5px;
+      }
+      :root[data-theme='dense'] table.g td {
+        padding: 3px 4px;
+      }
+      :root[data-theme='dense'] .banner {
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+      :root[data-theme='dense'] .map-card {
+        padding: 8px;
+      }
+      :root[data-theme='dense'] .toolbar {
+        margin-bottom: 8px;
+        gap: 8px;
+      }
+      :root[data-theme='dense'] .map-wrap {
+        padding: 6px;
+      }
+      :root[data-theme='dense'] .stage3d {
+        height: min(60vh, 560px);
+      }
+      :root[data-theme='dense'] .log {
+        max-height: 320px;
+        font-size: 11.5px;
+      }
+      :root[data-theme='dense'] .shortcuts {
+        margin-top: 6px;
+        font-size: 11px;
+      }
+
+      /* 深色主题下，三维立柱阴影与 LED 跟随主色 */
+      :root[data-theme='cyber'] .box3d i.top b.led,
+      :root[data-theme='hacker'] .box3d i.top b.led {
+        background: var(--blue);
+        box-shadow: 0 0 8px 2px var(--blue);
+      }
     </style>
   </head>
   <body>
@@ -1403,7 +1908,9 @@
         <button data-view="2d" class="active" data-testid="view-2d">2D</button>
         <button data-view="3d" data-testid="view-3d">3D</button>
       </div>
+      <select class="select theme-select" id="themeSelect" data-testid="theme-select" aria-label="主题风格"></select>
       <select class="select" id="mapSelect" data-testid="map-select" aria-label="选择地图"></select>
+      <button class="btn round" id="randomMapBtn" data-testid="random-map" title="随机生成地图" aria-label="随机生成地图"></button>
     </header>
 
     <div class="main">
@@ -1503,7 +2010,7 @@
               step="0.5"
               value="4"
               aria-label="速度"
-            /><span class="mono" id="speedLabel">4 格/秒</span>
+            /><span class="mono speed-label" id="speedLabel">4.0 格/秒</span>
           </div>
         </div>
         <div class="shortcuts">
@@ -3276,6 +3783,7 @@
         check: '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>',
         question: '<svg viewBox="0 0 16 16"><path d="M6 6a2 2 0 1 1 3 1.7c-.7.4-1 .9-1 1.6M8 12h.01"/></svg>',
         alert: '<svg viewBox="0 0 16 16"><path d="M8 4v5M8 12h.01"/></svg>',
+        dice: '<svg class="icon" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>',
         rotL: '<svg class="icon" viewBox="0 0 24 24"><path d="M9 7H4V2"/><path d="M4.6 7A8 8 0 1 1 4 12"/></svg>',
         rotR: '<svg class="icon" viewBox="0 0 24 24"><path d="M15 7h5V2"/><path d="M19.4 7A8 8 0 1 0 20 12"/></svg>',
         topView: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3 3 7.5 12 12l9-4.5z"/><path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5"/></svg>',
@@ -3312,6 +3820,17 @@
         regionGoal: 'rgba(255,45,85,0.13)',
         traveled: '#c7c7cc',
         text: '#1d1d1f',
+        // 以下由主题覆盖
+        plate: '#ffffff',
+        plateSide: ['#e5e5ea', '#c4c4ca'],
+        labelBg: '#ffffff',
+        labelText: '#1d1d1f',
+        labelStroke: 'rgba(0,0,0,.06)',
+        labelRx: 11,
+        anchorFill: '#ffffff',
+        robotBody: ['#ffffff', '#e5e5ea'],
+        flow: '#ffffff',
+        font: "-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif",
       };
       const BOX_COLORS = ['#8ec5ff', '#ffc97a', '#a8e0a0', '#f5a3b6', '#c9b8ff'];
 
@@ -3470,13 +3989,13 @@
     <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#ffd28a"/><rect width="3.5" height="7" fill="${ART.dyn}"/></pattern>
     <pattern id="barrier" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="9" height="9" fill="#ffffff"/><rect width="4.5" height="9" fill="${ART.passageClosed}"/></pattern>
     ${grad('gWall', ART.wallTop)}${grad('gTable', ART.tableTop)}${grad('gShelf', ART.shelfTop)}${grad('gMachine', ART.machineTop)}
-    <radialGradient id="gRobot" cx="0.38" cy="0.32" r="0.8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e5e5ea"/></radialGradient>
+    <radialGradient id="gRobot" cx="0.38" cy="0.32" r="0.8"><stop offset="0" stop-color="${ART.robotBody[0]}"/><stop offset="1" stop-color="${ART.robotBody[1]}"/></radialGradient>
     <filter id="soft" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.6" flood-color="#000" flood-opacity=".14"/></filter>
     <filter id="lift" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="2.5" stdDeviation="2.6" flood-color="#000" flood-opacity=".18"/></filter>
     <filter id="blur3" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter>
     <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="1.6"/></filter>
   </defs>`;
-        s += `<rect x="-10" y="-10" width="${W + 20}" height="${H + 20}" rx="16" fill="#ffffff" filter="url(#lift)"/>`;
+        s += `<rect x="-10" y="-10" width="${W + 20}" height="${H + 20}" rx="16" fill="${ART.plate}" filter="url(#lift)"/>`;
         s += `<rect width="${W}" height="${H}" rx="6" fill="url(#tiles)"/>`;
         let gl = '';
         for (let x = 1; x < m.width; x++) gl += `M${x * CELL} 0V${H}`;
@@ -3542,12 +4061,12 @@
           const c = CATEGORY[l.category].color,
             ax = (l.anchor.x + 0.5) * CELL,
             ay = (l.anchor.y + 0.5) * CELL;
-          s += `<circle cx="${ax}" cy="${ay}" r="5.5" fill="#fff" stroke="${c}" stroke-width="2.4" filter="url(#soft)"/><circle cx="${ax}" cy="${ay}" r="1.8" fill="${c}"/>`;
+          s += `<circle cx="${ax}" cy="${ay}" r="5.5" fill="${ART.anchorFill}" stroke="${c}" stroke-width="2.4" filter="url(#soft)"/><circle cx="${ax}" cy="${ay}" r="1.8" fill="${c}"/>`;
           const a = l.area || { x: l.anchor.x, y: l.anchor.y, w: 1, h: 1 };
           const w = labelWidth(l.name),
             cx = (a.x + a.w / 2) * CELL,
             ty = Math.max(a.y * CELL + 2, 13);
-          s += `<g transform="translate(${cx - w / 2} ${ty - 13})" style="pointer-events:none"><rect width="${w}" height="22" rx="11" fill="#ffffff" fill-opacity=".94" filter="url(#soft)"/><rect width="${w}" height="22" rx="11" fill="none" stroke="rgba(0,0,0,.06)"/><circle cx="12" cy="11" r="4" fill="${c}"/><text x="21" y="15" font-size="11.5" font-weight="600" fill="${ART.text}" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif" letter-spacing="-.2">${esc(l.name)}</text></g>`;
+          s += `<g transform="translate(${cx - w / 2} ${ty - 13})" style="pointer-events:none"><rect width="${w}" height="22" rx="${ART.labelRx}" fill="${ART.labelBg}" fill-opacity=".94" filter="url(#soft)"/><rect width="${w}" height="22" rx="${ART.labelRx}" fill="none" stroke="${ART.labelStroke}"/><circle cx="12" cy="11" r="4" fill="${c}"/><text x="21" y="15" font-size="11.5" font-weight="600" fill="${ART.labelText}" font-family="${ART.font.replace(/"/g, "'")}" letter-spacing="-.2">${esc(l.name)}</text></g>`;
         });
         $('labelLayer').innerHTML = s;
       }
@@ -3642,7 +4161,7 @@
                 p = pts(cells);
               s += `<g><polyline points="${p}" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity=".12"/>`;
               s += `<polyline points="${p}" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".92" style="stroke-dasharray:${len};animation:drawIn .9s cubic-bezier(.25,.1,.25,1) both;--len:${len}"/></g>`;
-              s += `<polyline points="${p}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.01 18" class="path-flow" opacity=".75"/>`;
+              s += `<polyline points="${p}" fill="none" stroke="${ART.flow}" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.01 18" class="path-flow" opacity=".75"/>`;
             });
           }
           $('pathLayer').innerHTML = s;
@@ -4217,10 +4736,26 @@
       }
 
       function init() {
+        const params0 = new URLSearchParams(location.search);
         $('mapSelect').innerHTML = MAPS.map(
           (m) => `<option value="${m.id}">${m.name} · ${m.width}×${m.height}</option>`,
         ).join('');
         $('mapSelect').addEventListener('change', (e) => selectMap(e.target.value));
+        $('themeSelect').innerHTML = Object.entries(THEMES)
+          .map(([id, t]) => `<option value="${id}">${t.label}</option>`)
+          .join('');
+        $('themeSelect').addEventListener('change', (e) => applyTheme(e.target.value, true));
+        $('randomMapBtn').innerHTML = ICONS.dice;
+        $('randomMapBtn').addEventListener('click', () => loadRandomMap());
+        let savedTheme = params0.get('theme');
+        if (!savedTheme) {
+          try {
+            savedTheme = localStorage.getItem('nlnav-theme');
+          } catch {
+            savedTheme = null;
+          }
+        }
+        applyTheme(THEMES[savedTheme] ? savedTheme : 'apple', false);
         $('runBtn').addEventListener('click', () => runCommand($('cmd').value));
         $('cmd').addEventListener('input', updateCounter);
         $('cmd').addEventListener('keydown', (e) => {
@@ -4365,7 +4900,7 @@
         });
         $('speed').addEventListener('input', (e) => {
           state.speed = +e.target.value;
-          $('speedLabel').textContent = `${state.speed} 格/秒`;
+          $('speedLabel').textContent = `${state.speed.toFixed(1)} 格/秒`;
           if (state.sim) state.sim.setSpeed(state.speed);
         });
         $('copyBtn').addEventListener('click', async () => {
@@ -4414,9 +4949,11 @@
           $('showExplored').checked = true;
           state.showExplored = true;
         }
-        selectMap(
-          params.get('map') && MAPS.some((m) => m.id === params.get('map')) ? params.get('map') : MAPS[0].id,
-        );
+        if (params.get('seed')) loadRandomMap(Number(params.get('seed')) >>> 0);
+        else
+          selectMap(
+            params.get('map') && MAPS.some((m) => m.id === params.get('map')) ? params.get('map') : MAPS[0].id,
+          );
         let savedView = params.get('view');
         if (!savedView) {
           try {
@@ -4528,10 +5065,11 @@
         });
         const T = 16; // 底板厚度
         let h = '';
-        h += `<div class="plate-side" style="left:-7px;top:${Hp + 7}px;width:${Wp + 14}px;height:${T}px;background:linear-gradient(#e5e5ea,#c4c4ca);transform:rotateX(-90deg)"></div>`;
-        h += `<div class="plate-side" style="left:-7px;top:-7px;width:${Wp + 14}px;height:${T}px;background:#bdbdc3;transform:rotateX(-90deg)"></div>`;
-        h += `<div class="plate-side" style="left:${Wp + 7}px;top:-7px;width:${T}px;height:${Hp + 14}px;background:linear-gradient(90deg,#d6d6db,#b9b9c0);transform:rotateY(90deg)"></div>`;
-        h += `<div class="plate-side" style="left:-7px;top:-7px;width:${T}px;height:${Hp + 14}px;background:linear-gradient(90deg,#d6d6db,#b9b9c0);transform:rotateY(90deg)"></div>`;
+        const [pa, pb] = ART.plateSide;
+        h += `<div class="plate-side" style="left:-7px;top:${Hp + 7}px;width:${Wp + 14}px;height:${T}px;background:linear-gradient(${pa},${pb});transform:rotateX(-90deg)"></div>`;
+        h += `<div class="plate-side" style="left:-7px;top:-7px;width:${Wp + 14}px;height:${T}px;background:${pb};transform:rotateX(-90deg)"></div>`;
+        h += `<div class="plate-side" style="left:${Wp + 7}px;top:-7px;width:${T}px;height:${Hp + 14}px;background:linear-gradient(90deg,${pa},${pb});transform:rotateY(90deg)"></div>`;
+        h += `<div class="plate-side" style="left:-7px;top:-7px;width:${T}px;height:${Hp + 14}px;background:linear-gradient(90deg,${pa},${pb});transform:rotateY(90deg)"></div>`;
         // 地面：沿用二维的坐标单位，路线、区域等图层可直接复用二维生成的 SVG 片段
         let f = `<svg class="floor3d" width="${Wp}" height="${Hp}" viewBox="0 0 ${W} ${H}"><defs><pattern id="f3tiles" width="${CELL * 2}" height="${CELL * 2}" patternUnits="userSpaceOnUse"><rect width="${CELL * 2}" height="${CELL * 2}" fill="${ART.floor}"/><rect width="${CELL}" height="${CELL}" fill="${ART.floorAlt}"/><rect x="${CELL}" y="${CELL}" width="${CELL}" height="${CELL}" fill="${ART.floorAlt}"/></pattern></defs>`;
         f += `<rect width="${W}" height="${H}" fill="url(#f3tiles)"/>`;
@@ -4548,7 +5086,7 @@
           }
           const ax = (l.anchor.x + 0.5) * CELL,
             ay = (l.anchor.y + 0.5) * CELL;
-          f += `<circle cx="${ax}" cy="${ay}" r="5.5" fill="#fff" stroke="${c}" stroke-width="2.4"/><circle cx="${ax}" cy="${ay}" r="1.8" fill="${c}"/>`;
+          f += `<circle cx="${ax}" cy="${ay}" r="5.5" fill="${ART.anchorFill}" stroke="${c}" stroke-width="2.4"/><circle cx="${ax}" cy="${ay}" r="1.8" fill="${c}"/>`;
         });
         f += `<g id="f3open"></g><g id="f3region"></g><g id="f3explored"></g><g id="f3path"></g><g id="f3traveled"></g></svg>`;
         let cells = '';
@@ -4878,6 +5416,364 @@
         else window.addEventListener('resize', () => state.view === '3d' && fit3D());
       }
 
+      /* =====================================================================
+       * 12. 主题风格：界面令牌在 CSS 中，地图美术调色板在这里；切换后整体重绘
+       * ===================================================================== */
+      const grad3 = (a, b) => `linear-gradient(160deg,${a},${b})`;
+      const faceSet = (top, s, ew, n) => ({ top, s, e: ew, w: ew, n });
+      const THEMES = {
+        apple: { label: '简约 · Apple' },
+        cyber: {
+          label: '赛博朋克',
+          art: {
+            floor: '#120c24', floorAlt: '#160f2c', grid: 'rgba(0,240,255,0.12)',
+            wallTop: ['#2f1a5c', '#1c0f3a'], wallSide: '#0b0618',
+            tableTop: ['#ff2bd6', '#b3179a'], tableSide: '#5e0c52',
+            shelfTop: ['#00e5ff', '#008ca8'], shelfSide: '#003a47',
+            machineTop: ['#f7f700', '#b8b800'], machineSide: '#4d4d00', led: '#00f0ff',
+            dyn: '#ff2bd6', dynSide: '#7a0f66', cleared: '#39ff14',
+            passageOpen: 'rgba(0,240,255,0.6)', passageClosed: '#ff2b4e',
+            explored: 'rgba(0,240,255,0.12)', regionStart: 'rgba(0,240,255,0.18)', regionGoal: 'rgba(255,43,214,0.18)',
+            traveled: '#4b3a6e', text: '#ece6ff',
+            plate: '#0b0618', plateSide: ['#2a1650', '#0b0618'],
+            labelBg: '#160d2e', labelText: '#ece6ff', labelStroke: 'rgba(0,240,255,.6)', labelRx: 3,
+            anchorFill: '#0b0618', robotBody: ['#f2edff', '#9c88dc'], flow: '#f7f700',
+            font: "'Segoe UI','Microsoft YaHei',sans-serif",
+          },
+          box: ['#ff2bd6', '#00f0ff', '#f7f700', '#7b5cff', '#ff6b2b'],
+          seg: ['#00f0ff', '#ff2bd6', '#f7f700', '#7b5cff', '#39ff14', '#ff6b2b', '#00a3ff', '#ff2b4e'],
+          status: { idle: '#00f0ff', ready: '#00f0ff', running: '#00f0ff', dwelling: '#ff2bd6', paused: '#f7f700', arrived: '#39ff14', blocked: '#ff2b4e' },
+          cat: { entrance: '#39ff14', workbench: '#ff2bd6', charging: '#00f0ff', storage: '#f7f700', rest: '#ff6b2b', office: '#7b5cff', dock: '#ff2b4e', lab: '#00ffa3', equipment: '#9a8cff', corridor: '#6b5c99' },
+          face: {
+            wall: faceSet(grad3('#341c66', '#1c0f3a'), '#120a28', '#160c30', '#0b0618'),
+            table: faceSet(grad3('#ff5ce0', '#b3179a'), '#7a0f66', '#8f1478', '#5e0c52'),
+            shelf: faceSet(grad3('#4ff2ff', '#008ca8'), 'repeating-linear-gradient(180deg,#003a47 0 2px,#006b80 2px 12px)', '#005a6b', '#003a47'),
+            machine: faceSet(grad3('#ffff4d', '#b8b800'), '#6b6b00', '#808000', '#4d4d00'),
+          },
+        },
+        ink: {
+          label: '水墨',
+          art: {
+            floor: '#f4efe4', floorAlt: '#efe8da', grid: 'rgba(40,34,28,0.06)',
+            wallTop: ['#3d3935', '#22201d'], wallSide: '#141210',
+            tableTop: ['#cdbb99', '#b3a07c'], tableSide: '#7d6c52',
+            shelfTop: ['#8f8270', '#6f6455'], shelfSide: '#3f3830',
+            machineTop: ['#80887f', '#5e6661'], machineSide: '#2e332f', led: '#b5322a',
+            dyn: '#b5322a', dynSide: '#6b1d18', cleared: '#5a7a5a',
+            passageOpen: 'rgba(36,33,30,0.45)', passageClosed: '#b5322a',
+            explored: 'rgba(60,55,48,0.08)', regionStart: 'rgba(70,90,110,0.15)', regionGoal: 'rgba(181,50,42,0.13)',
+            traveled: '#cbc2b1', text: '#24211e',
+            plate: '#faf6ee', plateSide: ['#e6dfd1', '#cfc6b4'],
+            labelBg: '#faf6ee', labelText: '#24211e', labelStroke: 'rgba(36,33,30,.45)', labelRx: 2,
+            anchorFill: '#faf6ee', robotBody: ['#fbf8f1', '#d9d0bf'], flow: '#faf6ee',
+            font: "'Songti SC','STSong','SimSun','Noto Serif SC',serif",
+          },
+          box: ['#8a9a8a', '#b0a080', '#7f8c99', '#a88f86', '#9d9a86'],
+          seg: ['#24211e', '#b5322a', '#4a5d6e', '#6b7d5a', '#8a6d3b', '#5a4a6e', '#3d6b6b', '#7a3b2e'],
+          status: { idle: '#24211e', ready: '#24211e', running: '#24211e', dwelling: '#4a5d6e', paused: '#8a6d3b', arrived: '#4a6b4a', blocked: '#b5322a' },
+          cat: { entrance: '#4a6b4a', workbench: '#6e5a7a', charging: '#3d6b7a', storage: '#8a6d3b', rest: '#a0523f', office: '#4a5d6e', dock: '#7a6a4a', lab: '#3d6b6b', equipment: '#5c5c5c', corridor: '#9a948a' },
+          face: {
+            wall: faceSet(grad3('#45403b', '#22201d'), '#1a1816', '#201e1b', '#121110'),
+            table: faceSet(grad3('#d6c6a6', '#b3a07c'), '#94825f', '#a08d6a', '#7d6c52'),
+            shelf: faceSet(grad3('#968a78', '#6f6455'), 'repeating-linear-gradient(180deg,#3f3830 0 2px,#5f554a 2px 12px)', '#544b40', '#3f3830'),
+            machine: faceSet(grad3('#8a928a', '#5e6661'), '#3e4540', '#464d48', '#2e332f'),
+          },
+        },
+        constructivist: {
+          label: '构成主义',
+          art: {
+            floor: '#efe6d2', floorAlt: '#e8dec7', grid: 'rgba(0,0,0,0.09)',
+            wallTop: ['#1a1a1a', '#111111'], wallSide: '#000000',
+            tableTop: ['#d4202a', '#b81a23'], tableSide: '#6e0f14',
+            shelfTop: ['#e8b923', '#cf9f12'], shelfSide: '#6b5208',
+            machineTop: ['#2b4c8c', '#203a6c'], machineSide: '#101d38', led: '#e8b923',
+            dyn: '#d4202a', dynSide: '#000000', cleared: '#2b4c8c',
+            passageOpen: 'rgba(0,0,0,0.55)', passageClosed: '#d4202a',
+            explored: 'rgba(212,32,42,0.09)', regionStart: 'rgba(43,76,140,0.18)', regionGoal: 'rgba(212,32,42,0.18)',
+            traveled: '#9c9480', text: '#111111',
+            plate: '#f7f0de', plateSide: ['#111111', '#000000'],
+            labelBg: '#111111', labelText: '#efe6d2', labelStroke: '#111111', labelRx: 0,
+            anchorFill: '#efe6d2', robotBody: ['#fffaf0', '#d8ccb0'], flow: '#efe6d2',
+            font: "'Arial Black','Impact','Microsoft YaHei',sans-serif",
+          },
+          box: ['#d4202a', '#111111', '#e8b923', '#2b4c8c', '#efe6d2'],
+          seg: ['#d4202a', '#111111', '#2b4c8c', '#e8b923', '#7a1d1d', '#555555', '#1d4f7a', '#b8860b'],
+          status: { idle: '#d4202a', ready: '#d4202a', running: '#d4202a', dwelling: '#2b4c8c', paused: '#e8b923', arrived: '#111111', blocked: '#d4202a' },
+          cat: { entrance: '#111111', workbench: '#d4202a', charging: '#2b4c8c', storage: '#e8b923', rest: '#d4202a', office: '#2b4c8c', dock: '#111111', lab: '#2b4c8c', equipment: '#555555', corridor: '#9c9480' },
+          face: {
+            wall: faceSet('#1a1a1a', '#000000', '#0a0a0a', '#000000'),
+            table: faceSet('#d4202a', '#8e1219', '#a3151d', '#6e0f14'),
+            shelf: faceSet('#e8b923', 'repeating-linear-gradient(180deg,#111 0 3px,#e8b923 3px 12px)', '#a8820f', '#6b5208'),
+            machine: faceSet('#2b4c8c', '#152a52', '#1b335f', '#101d38'),
+          },
+        },
+        hacker: {
+          label: '黑客终端',
+          art: {
+            floor: '#020a04', floorAlt: '#031006', grid: 'rgba(0,255,102,0.12)',
+            wallTop: ['#0d3a1c', '#082612'], wallSide: '#010702',
+            tableTop: ['#0f5c2a', '#0a4220'], tableSide: '#03150a',
+            shelfTop: ['#1a7a3c', '#125c2c'], shelfSide: '#052410',
+            machineTop: ['#1f4d33', '#163b27'], machineSide: '#061a0e', led: '#00ff66',
+            dyn: '#ffd400', dynSide: '#4d4000', cleared: '#00ff66',
+            passageOpen: 'rgba(0,255,102,0.55)', passageClosed: '#ff3333',
+            explored: 'rgba(0,255,102,0.1)', regionStart: 'rgba(0,255,102,0.14)', regionGoal: 'rgba(255,51,51,0.14)',
+            traveled: '#0f4020', text: '#7dffaa',
+            plate: '#000000', plateSide: ['#062a12', '#000000'],
+            labelBg: '#000000', labelText: '#00ff66', labelStroke: 'rgba(0,255,102,.7)', labelRx: 0,
+            anchorFill: '#000000', robotBody: ['#c8ffdc', '#3c8f5a'], flow: '#000000',
+            font: "'Cascadia Code',Consolas,'Courier New',monospace",
+          },
+          box: ['#00ff66', '#7dffaa', '#ffd400', '#00d4ff', '#1a7a3c'],
+          seg: ['#00ff66', '#00d4ff', '#ffd400', '#7dffaa', '#ff66cc', '#ccff00', '#66ccff', '#ff3333'],
+          status: { idle: '#00ff66', ready: '#00ff66', running: '#00ff66', dwelling: '#00d4ff', paused: '#ffd400', arrived: '#7dffaa', blocked: '#ff3333' },
+          cat: { entrance: '#00ff66', workbench: '#7dffaa', charging: '#00d4ff', storage: '#ffd400', rest: '#ff66cc', office: '#66ccff', dock: '#ccff00', lab: '#00ffcc', equipment: '#5c8a6b', corridor: '#2e5c3d' },
+          face: {
+            wall: faceSet(grad3('#0f4a22', '#082612'), '#03130a', '#041a0c', '#010702'),
+            table: faceSet(grad3('#137036', '#0a4220'), '#052a13', '#063318', '#03150a'),
+            shelf: faceSet(grad3('#21944a', '#125c2c'), 'repeating-linear-gradient(180deg,#00ff66 0 1px,#052410 1px 10px)', '#0a3a1a', '#052410'),
+            machine: faceSet(grad3('#26603f', '#163b27'), '#0b2a17', '#0e321c', '#061a0e'),
+          },
+        },
+        dense: {
+          label: '信息密集',
+          art: { grid: 'rgba(0,0,0,0.07)', labelRx: 3, font: "'Segoe UI','Microsoft YaHei',sans-serif" },
+          seg: ['#0a6cff', '#7c3aed', '#e11d48', '#f59e0b', '#059669', '#db2777', '#0891b2', '#78716c'],
+        },
+      };
+      /* 记录默认调色板，切换主题时先还原再覆盖，避免主题之间相互污染 */
+      const THEME_BASE = {
+        art: JSON.parse(JSON.stringify(ART)),
+        box: [...BOX_COLORS],
+        seg: [...SEGMENT_COLORS],
+        status: { ...STATUS_COLOR },
+        cat: Object.fromEntries(Object.entries(CATEGORY).map(([k, v]) => [k, v.color])),
+        face: JSON.parse(JSON.stringify(FACE3)),
+      };
+      function applyTheme(id, rerender) {
+        const t = THEMES[id] || THEMES.apple;
+        Object.assign(ART, JSON.parse(JSON.stringify(THEME_BASE.art)), t.art || {});
+        BOX_COLORS.splice(0, BOX_COLORS.length, ...(t.box || THEME_BASE.box));
+        SEGMENT_COLORS.splice(0, SEGMENT_COLORS.length, ...(t.seg || THEME_BASE.seg));
+        Object.assign(STATUS_COLOR, THEME_BASE.status, t.status || {});
+        Object.entries(THEME_BASE.cat).forEach(([k, c]) => (CATEGORY[k].color = (t.cat && t.cat[k]) || c));
+        Object.keys(FACE3).forEach((k) => Object.assign(FACE3[k], THEME_BASE.face[k], (t.face && t.face[k]) || {}));
+        document.documentElement.dataset.theme = id in THEMES ? id : 'apple';
+        $('themeSelect').value = document.documentElement.dataset.theme;
+        try {
+          localStorage.setItem('nlnav-theme', document.documentElement.dataset.theme);
+        } catch {
+          /* 隐私模式下忽略 */
+        }
+        if (!rerender) return;
+        renderSidebar();
+        renderStatic();
+        renderDynamic();
+        renderInspector();
+        renderLog();
+        drawRobot();
+        requestAnimationFrame(() => {
+          moveSegThumb();
+          if (state.view === '3d') fit3D();
+        });
+      }
+
+      /* =====================================================================
+       * 13. 随机地图：可复现（同一种子得到同一张图），保证全部空地连通，
+       *     用隔墙 + 两处通道制造“绕行 / 不可达”场景，并自动生成带期望结果的预设
+       * ===================================================================== */
+      function mulberry32(seed) {
+        let a = seed >>> 0;
+        return () => {
+          a = (a + 0x6d2b79f5) >>> 0;
+          let t = a;
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+      const RANDOM_PLACES = [
+        { id: 'rest-area', name: '休息区', aliases: ['休息室', '茶水间'], category: 'rest' },
+        { id: 'storage', name: '仓库', aliases: ['库房', '储物间'], category: 'storage' },
+        { id: 'office', name: '办公室', aliases: ['值班室'], category: 'office' },
+        { id: 'equipment', name: '设备间', aliases: ['机房', '设备室'], category: 'equipment' },
+        { id: 'dock', name: '装卸区', aliases: ['卸货区', '月台'], category: 'dock' },
+        { id: 'lab-1', name: '实验室', aliases: ['实验间'], category: 'lab' },
+      ];
+
+      function generateRandomMap(seed) {
+        const rnd = mulberry32(seed);
+        const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+        const shuffle = (arr) => {
+          for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(rnd() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+          }
+          return arr;
+        };
+        const W = ri(18, 24),
+          H = ri(11, 14);
+        const g = Array.from({ length: H }, (_, y) =>
+          Array.from({ length: W }, (_, x) => (x === 0 || y === 0 || x === W - 1 || y === H - 1 ? '#' : '.')),
+        );
+        // 隔墙：把地图分成左右两区，只留一扇门和一条双格通道
+        const dx = ri(Math.floor(W / 2) - 1, Math.floor(W / 2) + 1);
+        for (let y = 1; y < H - 1; y++) g[y][dx] = '#';
+        const doorY = ri(2, Math.floor(H / 2) - 2);
+        const corY = ri(Math.floor(H / 2) + 1, H - 3);
+        [doorY, corY, corY + 1].forEach((y) => (g[y][dx] = '.'));
+        const passages = [
+          { id: 'north-door', name: '北门', cells: [{ x: dx, y: doorY }] },
+          { id: 'central-corridor', name: '中央通道', cells: [{ x: dx, y: corY }, { x: dx, y: corY + 1 }] },
+        ];
+        const passageKeys = new Set(passages.flatMap((p) => p.cells.map(key)));
+        const free = (x, y) => g[y] && g[y][x] === '.';
+        const allConnected = () => {
+          let total = 0,
+            start = null;
+          for (let y = 0; y < H; y++)
+            for (let x = 0; x < W; x++)
+              if (free(x, y)) {
+                total++;
+                start = start || { x, y };
+              }
+          if (!start) return false;
+          const seen = new Set([key(start)]),
+            q = [start];
+          for (let i = 0; i < q.length; i++)
+            for (const d of DIRS) {
+              const n = { x: q[i].x + d.dx, y: q[i].y + d.dy };
+              if (free(n.x, n.y) && !seen.has(key(n))) {
+                seen.add(key(n));
+                q.push(n);
+              }
+            }
+          return seen.size === total;
+        };
+        // 在格子集合上尝试放置障碍：不得碰到通道附近、不得破坏连通性，否则回滚
+        const tryPlace = (cells, ch, guard = () => true) => {
+          if (!cells.every((c) => free(c.x, c.y) && Math.abs(c.x - dx) > 1 && guard(c))) return false;
+          cells.forEach((c) => (g[c.y][c.x] = ch));
+          if (allConnected()) return true;
+          cells.forEach((c) => (g[c.y][c.x] = '.'));
+          return false;
+        };
+        // 家具：货架成排、桌台成组、设备单个
+        const furniture = ri(7, 11);
+        for (let n = 0, tries = 0; n < furniture && tries < 200; tries++) {
+          const ch = ['S', 'S', 'T', 'T', 'M'][ri(0, 4)];
+          const w = ch === 'M' ? 1 : ri(1, 3),
+            h = ch === 'M' ? 1 : ri(1, 2);
+          const x0 = ri(2, W - 2 - w),
+            y0 = ri(2, H - 2 - h);
+          const cells = [];
+          for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) cells.push({ x, y });
+          if (tryPlace(cells, ch)) n++;
+        }
+        // 地点：入口在左侧边缘，工作台A在左区，工作台B与充电区在右区（制造跨区与“名称不明确”）
+        const extras = shuffle([...RANDOM_PLACES]).slice(0, ri(2, 3));
+        const specs = [
+          { id: 'entrance', name: '入口', aliases: ['门口', '大门'], category: 'entrance', side: 'edge' },
+          { id: 'workbench-a', name: '工作台A', aliases: ['A号工作台', '1号工作台', 'A工作台'], category: 'workbench', side: 'left', bench: true },
+          { id: 'workbench-b', name: '工作台B', aliases: ['B号工作台', '2号工作台', 'B工作台'], category: 'workbench', side: 'right', bench: true },
+          { id: 'charging', name: '充电区', aliases: ['充电站', '充电桩'], category: 'charging', side: 'right' },
+          ...extras.map((e) => ({ ...e, side: 'any' })),
+        ];
+        const locations = [];
+        const areaOverlap = (a) =>
+          locations.some(
+            (l) => l.area && a.x < l.area.x + l.area.w && l.area.x < a.x + a.w && a.y < l.area.y + l.area.h && l.area.y < a.y + a.h,
+          );
+        for (const spec of specs) {
+          const candidates = [];
+          for (let y = 1; y < H - 1; y++)
+            for (let x = 1; x < W - 1; x++) {
+              if (!free(x, y) || passageKeys.has(`${x},${y}`) || Math.abs(x - dx) <= 1) continue;
+              if (spec.side === 'edge' && x > 2) continue;
+              if (spec.side === 'left' && x >= dx) continue;
+              if (spec.side === 'right' && x <= dx) continue;
+              if (locations.some((l) => manhattan(l.anchor, { x, y }) < 4)) continue;
+              candidates.push({ x, y });
+            }
+          shuffle(candidates);
+          let placed = null;
+          for (const anchor of candidates) {
+            // 工作台：尽量在停靠点北侧摆一张桌子，让“工作台”在地图上看得见
+            if (spec.bench && anchor.y > 2) {
+              const desk = [-1, 0, 1].map((o) => ({ x: anchor.x + o, y: anchor.y - 1 }));
+              const near = desk.every((c) => c.x > 0 && c.x < W - 1 && !passageKeys.has(key(c)));
+              if (near) tryPlace(desk, 'T', (c) => !locations.some((l) => eq(l.anchor, c)));
+            }
+            if (!free(anchor.x, anchor.y) || !allConnected()) continue;
+            let area = { x: anchor.x, y: anchor.y, w: 1, h: 1 };
+            for (let t = 0; t < 24; t++) {
+              const w = ri(2, 3),
+                h = 2;
+              const a = { x: anchor.x - ri(0, w - 1), y: anchor.y - ri(0, h - 1), w, h };
+              const crosses = a.x <= dx && a.x + a.w - 1 >= dx;
+              if (a.x < 1 || a.y < 1 || a.x + a.w > W - 1 || a.y + a.h > H - 1 || crosses || areaOverlap(a)) continue;
+              area = a;
+              break;
+            }
+            placed = { id: spec.id, name: spec.name, aliases: spec.aliases, category: spec.category, anchor, area };
+            break;
+          }
+          if (placed) locations.push(placed);
+        }
+        const map = {
+          id: 'random',
+          name: `随机地图 #${seed}`,
+          width: W,
+          height: H,
+          defaultStart: 'entrance',
+          grid: g.map((r) => r.join('')),
+          locations,
+          passages,
+          presets: [],
+          seed,
+        };
+        // 预设：先列出想演示的场景，再用流水线实际跑一遍，把结果写成期望值（圆点颜色因此总是准确的）
+        const ids = new Set(locations.map((l) => l.id));
+        const name = (id) => locations.find((l) => l.id === id)?.name;
+        const extra = locations.find((l) => !['entrance', 'workbench-a', 'workbench-b', 'charging'].includes(l.id));
+        const drafts = [
+          ids.has('workbench-b') && { label: '跨区导航', text: '从入口去工作台B' },
+          ids.has('charging') && { label: '隐式起点', text: '去充电区' },
+          ids.has('workbench-a') && ids.has('workbench-b') && { label: '名称不明确', text: '从入口去工作台' },
+          { label: '未知地点', text: '去会议室' },
+          ids.has('workbench-a') && ids.has('charging') && { label: '多目标巡检', text: '先去工作台A，再去充电区，最后回到入口' },
+          ids.has('workbench-b') && { label: '绕行北门', text: '从入口去工作台B', closed: ['central-corridor'] },
+          ids.has('workbench-b') && { label: '通道全封闭', text: '从入口去工作台B', closed: ['central-corridor', 'north-door'] },
+          extra && { label: '某地到某地', text: `${extra.name}到${name('charging') || name('workbench-b') || '入口'}` },
+        ].filter(Boolean);
+        // 同一时间只保留一张随机地图：已存在则替换
+        const idx = MAPS.findIndex((m) => m.id === 'random');
+        if (idx >= 0) MAPS[idx] = map;
+        else MAPS.push(map);
+        const robot = locations.find((l) => l.id === 'entrance')?.anchor ?? null;
+        map.presets = drafts.map((d) => {
+          const tr = navigate({ mapId: 'random', text: d.text, robotCell: robot, overrides: { blocked: [], cleared: [], closedPassages: d.closed }, clarifications: {} });
+          const steps = tr.stages.plan.status === 'ok' ? tr.stages.plan.data.totalSteps : undefined;
+          return {
+            label: d.label,
+            text: d.text,
+            setup: { robotAt: 'entrance', closedPassages: d.closed },
+            expect: { outcome: tr.outcome, steps },
+          };
+        });
+        return map;
+      }
+
+      function loadRandomMap(seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0) {
+        const map = generateRandomMap(seed);
+        const opts = MAPS.map((m) => `<option value="${m.id}">${m.name} · ${m.width}×${m.height}</option>`).join('');
+        $('mapSelect').innerHTML = opts;
+        $('mapSelect').value = 'random';
+        selectMap('random');
+        toast(`已生成随机地图（种子 ${seed}），可在地址栏加 ?seed=${seed} 复现`);
+        return map;
+      }
+
       /* 自检：在控制台执行 __selfTest() 可跑全部预设并核对期望结果与黄金步数 */
       window.__selfTest = function () {
         const rows = [];
@@ -4921,6 +5817,9 @@
         setView,
         cam,
         applyCamera,
+        applyTheme,
+        generateRandomMap,
+        loadRandomMap,
       };
       init();
     </script>
