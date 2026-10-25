@@ -1077,6 +1077,300 @@
       .robot-halo {
         animation: halo 2.6s var(--ease) infinite;
       }
+      /* ---------- 三维视图（CSS 3D，无第三方依赖） ---------- */
+      .view-seg {
+        background: rgba(118, 118, 128, 0.14);
+      }
+      .view-seg button {
+        flex: 1;
+        padding: 5px 16px;
+        min-width: 52px;
+      }
+      /* 两个按钮等宽，滑块用纯 CSS 定位，不依赖加载时测量（避免字体未就绪导致错位） */
+      .view-seg .seg-thumb {
+        width: calc(50% - 2px);
+        transform: translateX(0);
+      }
+      .view-seg[data-view='3d'] .seg-thumb {
+        transform: translateX(100%);
+      }
+      .stage3d {
+        position: relative;
+        height: min(64vh, 620px);
+        min-height: 420px;
+        border-radius: var(--r-md);
+        overflow: hidden;
+        perspective: 1800px;
+        perspective-origin: 50% 42%;
+        background: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eef0f4 55%, #e1e4ea 100%);
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .stage3d.dragging {
+        cursor: grabbing;
+      }
+      .stage3d.mode-place,
+      .stage3d.mode-edit {
+        cursor: crosshair;
+      }
+      .world3d {
+        position: absolute;
+        transform-style: preserve-3d;
+        transform-origin: 50% 50%;
+        will-change: transform;
+      }
+      .layer3d {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+      }
+      .layer3d.passive {
+        pointer-events: none;
+      }
+      .floor3d {
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: block;
+        border-radius: 3px;
+        box-shadow: 0 0 0 7px #ffffff;
+      }
+      .plate-side {
+        position: absolute;
+        transform-origin: 0 0;
+      }
+      .c3 {
+        position: absolute;
+        border-radius: 7px;
+        transform: translateZ(0.6px);
+        transition:
+          background-color 0.15s var(--ease),
+          box-shadow 0.15s var(--ease);
+      }
+      .c3.hover {
+        background: rgba(0, 113, 227, 0.13);
+        box-shadow: inset 0 0 0 1.5px rgba(0, 113, 227, 0.6);
+      }
+      .box3d {
+        position: absolute;
+        transform-style: preserve-3d;
+      }
+      .box3d i {
+        position: absolute;
+        display: block;
+        transform-origin: 0 0;
+      }
+      .box3d i.top {
+        overflow: hidden;
+      }
+      .box3d i.top b {
+        position: absolute;
+        display: block;
+        border-radius: 2px;
+      }
+      .box3d i.top b.led {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #30d158;
+        box-shadow: 0 0 7px 2px rgba(48, 209, 88, 0.75);
+      }
+      .bb {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform-origin: 0 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .bb .stem {
+        width: 1.5px;
+        background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.04));
+      }
+      .label3d {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        padding: 4px 11px 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow:
+          0 6px 18px rgba(0, 0, 0, 0.12),
+          0 0 0 0.5px rgba(0, 0, 0, 0.06);
+      }
+      .label3d i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .pin3d {
+        width: 26px;
+        height: 26px;
+        border-radius: 50% 50% 50% 4px;
+        transform: rotate(-45deg);
+        display: grid;
+        place-items: center;
+        border: 2px solid #fff;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+      }
+      .pin3d span {
+        transform: rotate(45deg);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .start3d {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #30d158;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #248a3d;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
+      }
+      .robot3d {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform-style: preserve-3d;
+        color: #0071e3;
+        pointer-events: none;
+      }
+      .r3-shadow {
+        position: absolute;
+        left: -17px;
+        top: -15px;
+        width: 34px;
+        height: 30px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0));
+        transform: translate3d(3px, 4px, 0.8px);
+      }
+      .r3-halo {
+        position: absolute;
+        left: -19px;
+        top: -19px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        opacity: 0;
+        transform: translateZ(1px);
+      }
+      .robot3d.running .r3-halo {
+        animation: halo3d 2.6s var(--ease) infinite;
+      }
+      @keyframes halo3d {
+        0% {
+          transform: translateZ(1px) scale(0.72);
+          opacity: 0.42;
+        }
+        100% {
+          transform: translateZ(1px) scale(1.35);
+          opacity: 0;
+        }
+      }
+      .r3-body {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform-style: preserve-3d;
+      }
+      .r3-disc,
+      .r3-top {
+        position: absolute;
+        left: -13px;
+        top: -13px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+      }
+      .r3-top {
+        background: radial-gradient(circle at 38% 32%, #ffffff, #e5e5ea 78%);
+        box-shadow:
+          inset 0 0 0 2px rgba(255, 255, 255, 0.95),
+          inset 0 0 0 4px currentColor;
+      }
+      .r3-eye {
+        position: absolute;
+        left: 7px;
+        top: 9.5px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #1d1d1f;
+        box-shadow: inset 1.5px -1px 0 rgba(255, 255, 255, 0.45);
+      }
+      .r3-arrow {
+        position: absolute;
+        right: 1.5px;
+        top: 9px;
+        width: 0;
+        height: 0;
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+        border-left: 6px solid currentColor;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        box-shadow:
+          0 4px 16px rgba(0, 0, 0, 0.08),
+          0 0 0 0.5px rgba(0, 0, 0, 0.06);
+      }
+      .ctrl3d {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 3;
+        display: flex;
+        gap: 2px;
+        padding: 4px;
+        border-radius: 999px;
+      }
+      .ctrl3d .btn {
+        background: transparent;
+      }
+      .ctrl3d .btn:hover {
+        background: rgba(118, 118, 128, 0.14);
+      }
+      .hint3d {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        z-index: 3;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        color: var(--text-2);
+        pointer-events: none;
+      }
+      .view-fade {
+        animation: fadeIn 0.45s var(--ease) both;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .view-fade,
+        .robot3d.running .r3-halo {
+          animation: none !important;
+        }
+      }
       @media (prefers-reduced-motion: reduce) {
         .path-flow,
         .robot-halo,
@@ -1104,6 +1398,11 @@
         <span class="brand-sub">自然语言导航仿真</span>
       </div>
       <span class="spacer"></span>
+      <div class="seg view-seg" id="viewSeg" role="tablist" aria-label="视图切换">
+        <span class="seg-thumb" id="viewThumb"></span>
+        <button data-view="2d" class="active" data-testid="view-2d">2D</button>
+        <button data-view="3d" data-testid="view-3d">3D</button>
+      </div>
       <select class="select" id="mapSelect" data-testid="map-select" aria-label="选择地图"></select>
     </header>
 
@@ -1171,6 +1470,17 @@
         <div class="map-wrap" id="mapWrap">
           <svg class="map" id="map" data-testid="map-canvas" role="img" aria-label="导航地图"></svg>
           <div class="tooltip" id="tooltip"></div>
+        </div>
+        <div class="stage3d" id="stage3d" style="display: none" data-testid="map-3d">
+          <div class="world3d" id="world3d"></div>
+          <div class="ctrl3d glass" id="ctrl3d">
+            <button class="btn round" data-act="left" title="向左旋转 45°" aria-label="向左旋转"></button>
+            <button class="btn round" data-act="right" title="向右旋转 45°" aria-label="向右旋转"></button>
+            <button class="btn round" data-act="top" title="俯视 / 斜视" aria-label="切换俯视"></button>
+            <button class="btn round" data-act="reset" title="重置视角" aria-label="重置视角"></button>
+          </div>
+          <div class="hint3d glass">拖动旋转 · 滚轮缩放 · 编辑时用右键拖动旋转</div>
+          <div class="tooltip" id="tooltip3d"></div>
         </div>
         <div class="playback">
           <button
@@ -2966,6 +3276,10 @@
         check: '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>',
         question: '<svg viewBox="0 0 16 16"><path d="M6 6a2 2 0 1 1 3 1.7c-.7.4-1 .9-1 1.6M8 12h.01"/></svg>',
         alert: '<svg viewBox="0 0 16 16"><path d="M8 4v5M8 12h.01"/></svg>',
+        rotL: '<svg class="icon" viewBox="0 0 24 24"><path d="M9 7H4V2"/><path d="M4.6 7A8 8 0 1 1 4 12"/></svg>',
+        rotR: '<svg class="icon" viewBox="0 0 24 24"><path d="M15 7h5V2"/><path d="M19.4 7A8 8 0 1 0 20 12"/></svg>',
+        topView: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3 3 7.5 12 12l9-4.5z"/><path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5"/></svg>',
+        target: '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
       };
 
       /* =====================================================================
@@ -3031,6 +3345,7 @@
         pathSig: '',
         markerSig: '',
         traveledLen: -1,
+        view: '2d',
       };
       const overrides = () => ({
         blocked: [...state.blocked].map(parseKey),
@@ -3218,6 +3533,7 @@
         state.traveledLen = -1;
         renderLabels();
         renderCoords();
+        build3D();
       }
       function renderLabels() {
         const m = state.map;
@@ -3275,6 +3591,7 @@
             s += `<path d="${rectPath(p.cells, 4, 7)}" fill="rgba(0,113,227,.05)" stroke="${ART.passageOpen}" stroke-width="1.2" stroke-dasharray="3 3"/>`;
         });
         $('dynLayer').innerHTML = s;
+        update3DObstacles();
         // 不可达区域
         s = '';
         const err = state.trace && state.trace.error;
@@ -3289,6 +3606,7 @@
             s += `<path class="fade-in" d="${rectPath(ue.details.goalRegion.map(parseKey), 2, 4)}" fill="${ART.regionGoal}"/>`;
         }
         $('regionLayer').innerHTML = s;
+        set3D('f3region', s);
         // 搜索区域
         s = '';
         const planData =
@@ -3298,6 +3616,7 @@
             s += `<path class="fade-in" d="${rectPath(seg.explored, 6, 5)}" fill="${ART.explored}"/>`;
           });
         $('exploredLayer').innerHTML = s;
+        set3D('f3explored', s);
         renderPath();
       }
 
@@ -3327,6 +3646,7 @@
             });
           }
           $('pathLayer').innerHTML = s;
+          set3D('f3path', s);
           state.traveledLen = -1;
           state.markerSig = '';
         }
@@ -3337,10 +3657,12 @@
         const len = snap ? snap.traveled.length : 0;
         if (len === state.traveledLen) return;
         state.traveledLen = len;
-        $('traveledLayer').innerHTML =
+        const html =
           snap && len > 1
             ? `<polyline points="${pts(snap.traveled)}" fill="none" stroke="${ART.traveled}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>`
             : '';
+        $('traveledLayer').innerHTML = html;
+        set3D('f3traveled', html);
       }
       function renderMarkers(snap) {
         const sig = snap ? `${state.pathSig}#${snap.nextWaypoint}` : '';
@@ -3360,6 +3682,7 @@
           });
         }
         $('markerLayer').innerHTML = s;
+        render3DMarkers(snap);
       }
 
       /* ---------- 机器人（每帧命令式更新 transform） ---------- */
@@ -3388,7 +3711,10 @@
       }
       function drawRobot() {
         const g = ensureRobot();
-        if (!g) return;
+        if (!g) {
+          draw3DRobot(null);
+          return;
+        }
         let pose,
           status = 'idle',
           cellK;
@@ -3411,6 +3737,7 @@
           g.dataset.status = status;
         }
         g.dataset.cell = cellK;
+        draw3DRobot(pose, status, cellK, state.heading);
       }
 
       /* ---------- 流水线面板 ---------- */
@@ -3733,6 +4060,10 @@
       function onMapPointerDown(ev) {
         const c = cellFromEvent(ev);
         if (!c) return;
+        handleCellDown(c, () => $('map').setPointerCapture(ev.pointerId));
+      }
+      /* 二维与三维共用的格子点击逻辑；capture 为二维拖动绘制时的指针捕获回调 */
+      function handleCellDown(c, capture) {
         if (state.mode === 'place') {
           if (simBusy()) {
             toast('运行中不能移动机器人');
@@ -3762,7 +4093,7 @@
           const action = toggleObstacle(c, null);
           if (action) {
             state.painting = action;
-            $('map').setPointerCapture(ev.pointerId);
+            if (capture) capture();
             onGridChanged();
           }
           return;
@@ -3774,6 +4105,26 @@
           $('cmd').focus();
         }
       }
+      /* 编辑模式拖动时，对经过的格子执行与按下时相同的动作（跳过通道格） */
+      function paintCell(c) {
+        if (!state.painting || state.mode !== 'edit') return;
+        if (state.map.passages.some((p) => p.cells.some((pc) => eq(pc, c)))) return;
+        const k = key(c);
+        const already =
+          terrainAt(state.map, c) !== 'floor'
+            ? (state.painting === 'remove') === state.cleared.has(k)
+            : (state.painting === 'add') === state.blocked.has(k);
+        if (!already && toggleObstacle(c, state.painting)) onGridChanged();
+      }
+      function cellInfo(c) {
+        const g = currentGrid();
+        const loc = state.map.locations.find((x) => (x.area ? rectHas(x.area, c) : eq(x.anchor, c)));
+        const pass = state.map.passages.find((p) => p.cells.some((pc) => eq(pc, c)));
+        const terr = { floor: '地面', wall: '墙体', table: '桌台', shelf: '货架', machine: '设备' }[
+          terrainAt(state.map, c)
+        ];
+        return `${fmt(c)} · ${g.isBlocked(c) ? '不可通行' : '可通行'} · ${state.blocked.has(key(c)) ? '临时障碍' : terr}${loc ? ' · ' + loc.name + (eq(loc.anchor, c) ? '（停靠点）' : '') : ''}${pass ? ' · ' + pass.name + (state.closed.has(pass.id) ? '（封闭）' : '') : ''}`;
+      }
       function onMapPointerMove(ev) {
         const c = cellFromEvent(ev);
         const tip = $('tooltip');
@@ -3782,30 +4133,13 @@
           $('hoverLayer').innerHTML = '';
           return;
         }
-        if (
-          state.painting &&
-          state.mode === 'edit' &&
-          !state.map.passages.some((p) => p.cells.some((pc) => eq(pc, c)))
-        ) {
-          const k = key(c);
-          const already =
-            terrainAt(state.map, c) !== 'floor'
-              ? (state.painting === 'remove') === state.cleared.has(k)
-              : (state.painting === 'add') === state.blocked.has(k);
-          if (!already && toggleObstacle(c, state.painting)) onGridChanged();
-        }
+        paintCell(c);
         if ($('hoverLayer').dataset.cell !== key(c)) {
           $('hoverLayer').dataset.cell = key(c);
           $('hoverLayer').innerHTML =
             `<rect x="${c.x * CELL + 1.5}" y="${c.y * CELL + 1.5}" width="${CELL - 3}" height="${CELL - 3}" rx="7" fill="rgba(0,113,227,.06)" stroke="#0071e3" stroke-opacity=".55" stroke-width="1.5"/>`;
         }
-        const g = currentGrid();
-        const loc = state.map.locations.find((x) => (x.area ? rectHas(x.area, c) : eq(x.anchor, c)));
-        const pass = state.map.passages.find((p) => p.cells.some((pc) => eq(pc, c)));
-        const terr = { floor: '地面', wall: '墙体', table: '桌台', shelf: '货架', machine: '设备' }[
-          terrainAt(state.map, c)
-        ];
-        tip.textContent = `${fmt(c)} · ${g.isBlocked(c) ? '不可通行' : '可通行'} · ${state.blocked.has(key(c)) ? '临时障碍' : terr}${loc ? ' · ' + loc.name + (eq(loc.anchor, c) ? '（停靠点）' : '') : ''}${pass ? ' · ' + pass.name + (state.closed.has(pass.id) ? '（封闭）' : '') : ''}`;
+        tip.textContent = cellInfo(c);
         const wrap = $('mapWrap').getBoundingClientRect();
         tip.style.left = `${ev.clientX - wrap.left}px`;
         tip.style.top = `${ev.clientY - wrap.top}px`;
@@ -3954,8 +4288,14 @@
           state.mode = b.dataset.mode;
           [...$('modeSeg').querySelectorAll('button')].forEach((x) => x.classList.toggle('active', x === b));
           $('map').setAttribute('class', `map mode-${state.mode}`);
+          $('stage3d').className = `stage3d mode-${state.mode}`;
           moveSegThumb();
         });
+        $('viewSeg').addEventListener('click', (e) => {
+          const b = e.target.closest('button');
+          if (b && b.dataset.view !== state.view) setView(b.dataset.view);
+        });
+        setup3D();
         window.addEventListener('resize', moveSegThumb);
         const svg = $('map');
         svg.addEventListener('pointerdown', onMapPointerDown);
@@ -4077,10 +4417,465 @@
         selectMap(
           params.get('map') && MAPS.some((m) => m.id === params.get('map')) ? params.get('map') : MAPS[0].id,
         );
+        let savedView = params.get('view');
+        if (!savedView) {
+          try {
+            savedView = localStorage.getItem('nlnav-view');
+          } catch {
+            savedView = null;
+          }
+        }
         requestAnimationFrame(() => {
           moveSegThumb();
+          setView(savedView === '3d' ? '3d' : '2d', false);
           requestAnimationFrame(frame);
         });
+      }
+
+      /* =====================================================================
+       * 11. 三维视图：纯 CSS 3D（无第三方依赖），与二维共用同一份状态与仿真
+       * ===================================================================== */
+      const C3 = 34; // 三维中每格的像素边长
+      const H3 = { wall: 46, table: 15, shelf: 38, machine: 26, dyn: 22, barrier: 18 };
+      const INSET3 = { wall: 0, table: 3, shelf: 3, machine: 4, dyn: 4, barrier: 2 };
+      const FACE3 = {
+        wall: { top: 'linear-gradient(160deg,#6f7683,#586070)', s: '#4b515c', e: '#555c68', w: '#555c68', n: '#40454e' },
+        table: { top: 'linear-gradient(160deg,#f0dbbf,#dcba94)', s: '#c49c73', e: '#cea880', w: '#cea880', n: '#b48e66' },
+        shelf: {
+          top: 'linear-gradient(160deg,#d9b790,#c29d75)',
+          s: 'repeating-linear-gradient(180deg,#8d6a4a 0 2px,#b88f68 2px 12px)',
+          e: '#a8825c',
+          w: '#a8825c',
+          n: '#8d6a4a',
+        },
+        machine: { top: 'linear-gradient(160deg,#b4bdca,#8d99ab)', s: '#6d788b', e: '#7a8598', w: '#7a8598', n: '#5d677a' },
+        dyn: {
+          top: 'repeating-linear-gradient(45deg,#ff9f0a 0 5px,#ffd08a 5px 10px)',
+          s: '#e58e00',
+          e: '#f29600',
+          w: '#f29600',
+          n: '#cc7f00',
+        },
+        barrier: {
+          top: 'repeating-linear-gradient(-45deg,#ff3b30 0 6px,#ffffff 6px 12px)',
+          s: 'repeating-linear-gradient(90deg,#ff3b30 0 6px,#ffffff 6px 12px)',
+          e: '#e0352b',
+          w: '#e0352b',
+          n: '#c62f26',
+        },
+      };
+      const CAM_DEFAULT = { yaw: -20, pitch: 56, zoom: 1 };
+      const cam = { ...CAM_DEFAULT, fit: 1, drag: null };
+      const v3 = { labels: [], markers: [], robot: null, body: null, hover: null, status: '' };
+      const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+      const set3D = (id, html) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+      };
+
+      function setView(view, animate = true) {
+        state.view = view;
+        const is3d = view === '3d';
+        $('mapWrap').style.display = is3d ? 'none' : '';
+        $('stage3d').style.display = is3d ? '' : 'none';
+        $('tooltip').style.display = 'none';
+        $('tooltip3d').style.display = 'none';
+        [...$('viewSeg').querySelectorAll('button')].forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+        $('viewSeg').dataset.view = view;
+        const shown = is3d ? $('stage3d') : $('mapWrap');
+        if (animate) {
+          shown.classList.remove('view-fade');
+          void shown.offsetWidth;
+          shown.classList.add('view-fade');
+        }
+        if (is3d) fit3D();
+        try {
+          localStorage.setItem('nlnav-view', view);
+        } catch {
+          /* 隐私模式下忽略 */
+        }
+      }
+
+      /* 每格一个盒子：只画需要的侧面；侧面带由地面向上渐亮的遮蔽，营造体积感 */
+      function box3D(x, y, kind, faces, extra) {
+        const inset = INSET3[kind],
+          h = H3[kind],
+          s = C3 - 2 * inset,
+          f = FACE3[kind];
+        const ao = (dir) => `linear-gradient(${dir},rgba(0,0,0,.2),rgba(0,0,0,0) 75%)`;
+        const radius = kind === 'wall' ? 0 : 4;
+        let o = `<div class="box3d" data-x="${x}" data-y="${y}" style="left:${x * C3 + inset}px;top:${y * C3 + inset}px;width:${s}px;height:${s}px">`;
+        if (faces.n) o += `<i style="left:0;top:0;width:${s}px;height:${h}px;background:${ao('180deg')},${f.n};transform:rotateX(90deg)"></i>`;
+        if (faces.s) o += `<i style="left:0;top:${s}px;width:${s}px;height:${h}px;background:${ao('180deg')},${f.s};transform:rotateX(90deg)"></i>`;
+        if (faces.w) o += `<i style="left:0;top:0;width:${h}px;height:${s}px;background:${ao('90deg')},${f.w};transform:rotateY(-90deg)"></i>`;
+        if (faces.e) o += `<i style="left:${s}px;top:0;width:${h}px;height:${s}px;background:${ao('90deg')},${f.e};transform:rotateY(-90deg)"></i>`;
+        o += `<i class="top" style="left:0;top:0;width:${s}px;height:${s}px;border-radius:${radius}px;background:${f.top};transform:translateZ(${h}px)">${extra}</i></div>`;
+        return o;
+      }
+
+      function build3D() {
+        const m = state.map,
+          Wp = m.width * C3,
+          Hp = m.height * C3,
+          W = m.width * CELL,
+          H = m.height * CELL;
+        const world = $('world3d');
+        Object.assign(world.style, {
+          width: `${Wp}px`,
+          height: `${Hp}px`,
+          left: `calc(50% - ${Wp / 2}px)`,
+          top: `calc(50% - ${Hp / 2}px)`,
+        });
+        const T = 16; // 底板厚度
+        let h = '';
+        h += `<div class="plate-side" style="left:-7px;top:${Hp + 7}px;width:${Wp + 14}px;height:${T}px;background:linear-gradient(#e5e5ea,#c4c4ca);transform:rotateX(-90deg)"></div>`;
+        h += `<div class="plate-side" style="left:-7px;top:-7px;width:${Wp + 14}px;height:${T}px;background:#bdbdc3;transform:rotateX(-90deg)"></div>`;
+        h += `<div class="plate-side" style="left:${Wp + 7}px;top:-7px;width:${T}px;height:${Hp + 14}px;background:linear-gradient(90deg,#d6d6db,#b9b9c0);transform:rotateY(90deg)"></div>`;
+        h += `<div class="plate-side" style="left:-7px;top:-7px;width:${T}px;height:${Hp + 14}px;background:linear-gradient(90deg,#d6d6db,#b9b9c0);transform:rotateY(90deg)"></div>`;
+        // 地面：沿用二维的坐标单位，路线、区域等图层可直接复用二维生成的 SVG 片段
+        let f = `<svg class="floor3d" width="${Wp}" height="${Hp}" viewBox="0 0 ${W} ${H}"><defs><pattern id="f3tiles" width="${CELL * 2}" height="${CELL * 2}" patternUnits="userSpaceOnUse"><rect width="${CELL * 2}" height="${CELL * 2}" fill="${ART.floor}"/><rect width="${CELL}" height="${CELL}" fill="${ART.floorAlt}"/><rect x="${CELL}" y="${CELL}" width="${CELL}" height="${CELL}" fill="${ART.floorAlt}"/></pattern></defs>`;
+        f += `<rect width="${W}" height="${H}" fill="url(#f3tiles)"/>`;
+        let gl = '';
+        for (let x = 1; x < m.width; x++) gl += `M${x * CELL} 0V${H}`;
+        for (let y = 1; y < m.height; y++) gl += `M0 ${y * CELL}H${W}`;
+        f += `<path d="${gl}" stroke="${ART.grid}" stroke-width="1" fill="none"/>`;
+        m.locations.forEach((l) => {
+          const c = CATEGORY[l.category].color;
+          if (l.area) {
+            const a = l.area,
+              wide = l.category === 'storage' || l.category === 'corridor';
+            f += `<rect x="${a.x * CELL + 3}" y="${a.y * CELL + 3}" width="${a.w * CELL - 6}" height="${a.h * CELL - 6}" rx="10" fill="${c}" fill-opacity="${wide ? 0.06 : 0.12}" stroke="${c}" stroke-opacity="${wide ? 0.3 : 0.45}" stroke-width="1.2" ${wide ? 'stroke-dasharray="4 4"' : ''}/>`;
+          }
+          const ax = (l.anchor.x + 0.5) * CELL,
+            ay = (l.anchor.y + 0.5) * CELL;
+          f += `<circle cx="${ax}" cy="${ay}" r="5.5" fill="#fff" stroke="${c}" stroke-width="2.4"/><circle cx="${ax}" cy="${ay}" r="1.8" fill="${c}"/>`;
+        });
+        f += `<g id="f3open"></g><g id="f3region"></g><g id="f3explored"></g><g id="f3path"></g><g id="f3traveled"></g></svg>`;
+        let cells = '';
+        for (let y = 0; y < m.height; y++)
+          for (let x = 0; x < m.width; x++)
+            cells += `<div class="c3" data-x="${x}" data-y="${y}" style="left:${x * C3}px;top:${y * C3}px;width:${C3}px;height:${C3}px"></div>`;
+        const discs = Array.from(
+          { length: 8 },
+          (_, i) =>
+            `<div class="r3-disc" style="transform:translateZ(${2 + i * 2}px);background:${i === 4 ? 'currentColor' : `hsl(240 4% ${68 + i * 3}%)`}"></div>`,
+        ).join('');
+        const robot = `<div class="robot3d" id="robot3d" data-testid="robot-3d"><div class="r3-shadow"></div><div class="r3-halo"></div><div class="r3-body" id="robot3dBody">${discs}<div class="r3-top" style="transform:translateZ(18px)"><div class="r3-eye"></div><div class="r3-arrow"></div></div></div></div>`;
+        world.innerHTML =
+          h +
+          f +
+          `<div class="layer3d" id="hit3d">${cells}</div><div class="layer3d" id="obs3d"></div><div class="layer3d passive" id="labels3d"></div><div class="layer3d passive" id="markers3d"></div>` +
+          robot;
+        v3.robot = $('robot3d');
+        v3.body = $('robot3dBody');
+        v3.hover = null;
+        v3.status = '';
+        $('labels3d').innerHTML = m.locations
+          .map(
+            (l) =>
+              `<div class="bb"><div class="label3d"><i style="background:${CATEGORY[l.category].color}"></i>${esc(l.name)}</div><div class="stem" style="height:34px"></div></div>`,
+          )
+          .join('');
+        v3.labels = m.locations.map((l, i) => ({
+          el: $('labels3d').children[i],
+          x: (l.anchor.x + 0.5) * C3,
+          y: (l.anchor.y + 0.5) * C3,
+          z: 4,
+        }));
+        v3.markers = [];
+        fit3D();
+      }
+
+      /*
+       * 墙体合并：顶面按“行内连续段 + 上下行同段”合并成矩形，侧面按行/列连续段合并成长条，消除逐格接缝。
+       * 合并后的面用 data-ox/oy（起始格）与 data-dir（x/y/xy）标注，点击时由 offsetX/offsetY 反推格子。
+       */
+      function wallRuns3D(m, isWall) {
+        const hW = H3.wall,
+          f = FACE3.wall;
+        const ao = (dir) => `linear-gradient(${dir},rgba(0,0,0,.2),rgba(0,0,0,0) 75%)`;
+        const rowRuns = (y, test) => {
+          const runs = [];
+          for (let x = 0; x < m.width; ) {
+            if (!test(x, y)) {
+              x++;
+              continue;
+            }
+            const s = x;
+            while (x < m.width && test(x, y)) x++;
+            runs.push([s, x]);
+          }
+          return runs;
+        };
+        const colRuns = (x, test) => {
+          const runs = [];
+          for (let y = 0; y < m.height; ) {
+            if (!test(x, y)) {
+              y++;
+              continue;
+            }
+            const s = y;
+            while (y < m.height && test(x, y)) y++;
+            runs.push([s, y]);
+          }
+          return runs;
+        };
+        let o = '';
+        // 顶面：贪心合并成矩形
+        const used = new Set();
+        const runsByRow = Array.from({ length: m.height }, (_, y) => rowRuns(y, isWall));
+        runsByRow.forEach((runs, y) =>
+          runs.forEach(([s, e]) => {
+            if (used.has(`${y}:${s}:${e}`)) return;
+            let y2 = y + 1;
+            while (y2 < m.height && runsByRow[y2].some(([a, b]) => a === s && b === e)) {
+              used.add(`${y2}:${s}:${e}`);
+              y2++;
+            }
+            o += `<i class="wall-face" data-ox="${s}" data-oy="${y}" data-dir="xy" style="left:${s * C3}px;top:${y * C3}px;width:${(e - s) * C3}px;height:${(y2 - y) * C3}px;background:${f.top};transform:translateZ(${hW}px)"></i>`;
+          }),
+        );
+        // 南北侧面：行内连续段
+        for (let y = 0; y < m.height; y++) {
+          rowRuns(y, (x, yy) => isWall(x, yy) && !isWall(x, yy + 1)).forEach(([s, e]) => {
+            o += `<i class="wall-face" data-ox="${s}" data-oy="${y}" data-dir="x" style="left:${s * C3}px;top:${(y + 1) * C3}px;width:${(e - s) * C3}px;height:${hW}px;background:${ao('180deg')},${f.s};transform:rotateX(90deg)"></i>`;
+          });
+          rowRuns(y, (x, yy) => isWall(x, yy) && !isWall(x, yy - 1)).forEach(([s, e]) => {
+            o += `<i class="wall-face" data-ox="${s}" data-oy="${y}" data-dir="x" style="left:${s * C3}px;top:${y * C3}px;width:${(e - s) * C3}px;height:${hW}px;background:${ao('180deg')},${f.n};transform:rotateX(90deg)"></i>`;
+          });
+        }
+        // 东西侧面：列内连续段
+        for (let x = 0; x < m.width; x++) {
+          colRuns(x, (xx, y) => isWall(xx, y) && !isWall(xx - 1, y)).forEach(([s, e]) => {
+            o += `<i class="wall-face" data-ox="${x}" data-oy="${s}" data-dir="y" style="left:${x * C3}px;top:${s * C3}px;width:${hW}px;height:${(e - s) * C3}px;background:${ao('90deg')},${f.w};transform:rotateY(-90deg)"></i>`;
+          });
+          colRuns(x, (xx, y) => isWall(xx, y) && !isWall(xx + 1, y)).forEach(([s, e]) => {
+            o += `<i class="wall-face" data-ox="${x}" data-oy="${s}" data-dir="y" style="left:${(x + 1) * C3}px;top:${s * C3}px;width:${hW}px;height:${(e - s) * C3}px;background:${ao('90deg')},${f.e};transform:rotateY(-90deg)"></i>`;
+          });
+        }
+        return `<div class="box3d" style="left:0;top:0;width:0;height:0">${o}</div>`;
+      }
+
+      function update3DObstacles() {
+        if (!$('obs3d')) return;
+        const m = state.map;
+        const closedCells = new Set();
+        m.passages.forEach((p) => {
+          if (state.closed.has(p.id)) p.cells.forEach((c) => closedCells.add(key(c)));
+        });
+        const kindAt = (x, y) => {
+          if (x < 0 || y < 0 || x >= m.width || y >= m.height) return 'void';
+          const k = `${x},${y}`;
+          if (closedCells.has(k)) return 'barrier';
+          if (state.blocked.has(k)) return 'dyn';
+          const t = terrainAt(m, { x, y });
+          return t !== 'floor' && !state.cleared.has(k) ? t : null;
+        };
+        const all = { n: true, s: true, e: true, w: true };
+        let h = wallRuns3D(m, (x, y) => kindAt(x, y) === 'wall');
+        for (let y = 0; y < m.height; y++)
+          for (let x = 0; x < m.width; x++) {
+            const kind = kindAt(x, y);
+            if (!kind || kind === 'wall') continue;
+            const faces = all;
+            let extra = '';
+            if (kind === 'shelf')
+              extra = `<b style="left:4px;top:4px;width:11px;height:11px;background:${BOX_COLORS[(x * 7 + y * 3) % 5]}"></b><b style="right:4px;bottom:5px;width:10px;height:9px;background:${BOX_COLORS[(x * 5 + y * 11 + 2) % 5]}"></b>`;
+            else if (kind === 'machine')
+              extra = `<b class="led" style="right:5px;top:5px"></b><b style="left:6px;bottom:7px;width:13px;height:2px;background:rgba(255,255,255,.45)"></b>`;
+            else if (kind === 'table')
+              extra = `<b style="left:8px;top:8px;width:12px;height:9px;background:rgba(255,255,255,.5)"></b>`;
+            h += box3D(x, y, kind, faces, extra);
+          }
+        $('obs3d').innerHTML = h;
+        let f = '';
+        m.passages.forEach((p) => {
+          if (!state.closed.has(p.id))
+            f += `<path d="${rectPath(p.cells, 4, 7)}" fill="rgba(0,113,227,.06)" stroke="${ART.passageOpen}" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+        });
+        [...state.cleared].map(parseKey).forEach((c) => {
+          f += `<rect x="${c.x * CELL + 4}" y="${c.y * CELL + 4}" width="${CELL - 8}" height="${CELL - 8}" rx="6" fill="rgba(48,209,88,.1)" stroke="${ART.cleared}" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+        });
+        set3D('f3open', f);
+      }
+
+      function render3DMarkers(snap) {
+        const host = $('markers3d');
+        if (!host) return;
+        const list = [];
+        let h = '';
+        if (snap) {
+          const st = snap.path[0];
+          h += `<div class="bb"><div class="start3d">起</div><div class="stem" style="height:12px"></div></div>`;
+          // 标记悬浮在机器人（高 18px）上方，机器人停在起点或终点时不会被遮挡
+          list.push({ x: (st.x + 0.5) * C3, y: (st.y + 0.5) * C3, z: 24 });
+          snap.waypointIndices.forEach((wi, i) => {
+            const c = snap.path[wi];
+            if (!c) return;
+            const done = i < snap.nextWaypoint,
+              lbl = snap.waypointIndices.length === 1 ? '终' : String(i + 1);
+            h += `<div class="bb" style="opacity:${done ? 0.55 : 1}"><div class="pin3d" style="background:${SEGMENT_COLORS[i % SEGMENT_COLORS.length]}"><span>${done ? '✓' : lbl}</span></div><div class="stem" style="height:14px"></div></div>`;
+            list.push({ x: (c.x + 0.5) * C3, y: (c.y + 0.5) * C3, z: 24 });
+          });
+        }
+        host.innerHTML = h;
+        v3.markers = list.map((p, i) => ({ ...p, el: host.children[i] }));
+        applyBillboards();
+      }
+
+      function draw3DRobot(pose, status, cellK, heading) {
+        const r = v3.robot;
+        if (!r) return;
+        if (!pose) {
+          r.style.display = 'none';
+          return;
+        }
+        r.style.display = '';
+        r.style.transform = `translate3d(${((pose.x + 0.5) * C3).toFixed(2)}px,${((pose.y + 0.5) * C3).toFixed(2)}px,0)`;
+        v3.body.style.transform = `rotateZ(${heading.toFixed(2)}deg)`;
+        if (v3.status !== status) {
+          r.style.color = STATUS_COLOR[status] || STATUS_COLOR.idle;
+          r.classList.toggle('running', status === 'running');
+          r.dataset.status = status;
+          v3.status = status;
+        }
+        r.dataset.cell = cellK;
+      }
+
+      /* ---------- 相机：世界整体旋转；标签与图钉做“广告牌”反向旋转，始终面向镜头 ---------- */
+      function applyCamera(animate = false) {
+        const w = $('world3d');
+        if (!w) return;
+        const tr = animate ? 'transform .7s cubic-bezier(.25,.1,.25,1)' : 'none';
+        w.style.transition = tr;
+        // 斜视时远端被压缩、整体视觉重心下沉，按俯仰角把场景略微上移以保持居中
+        const lift = (-9 * Math.sin((cam.pitch * Math.PI) / 180)).toFixed(2);
+        w.style.transform = `translateY(${lift}%) scale(${(cam.fit * cam.zoom).toFixed(4)}) rotateX(${cam.pitch}deg) rotateZ(${cam.yaw}deg)`;
+        applyBillboards(tr);
+      }
+      function applyBillboards(transition) {
+        const rot = `rotateZ(${-cam.yaw}deg) rotateX(${-cam.pitch}deg)`;
+        for (const b of [...v3.labels, ...v3.markers]) {
+          if (!b.el) continue;
+          if (transition !== undefined) b.el.style.transition = transition;
+          b.el.style.transform = `translate3d(${b.x}px,${b.y}px,${b.z}px) ${rot} translate(-50%,-100%)`;
+        }
+      }
+      function fit3D() {
+        const st = $('stage3d');
+        if (!st || st.style.display === 'none' || !st.clientWidth) return;
+        const Wp = state.map.width * C3,
+          Hp = state.map.height * C3;
+        cam.fit = Math.min(st.clientWidth / (Wp * 1.2), st.clientHeight / (Hp * 1.0));
+        applyCamera(false);
+      }
+
+      function cellOf3D(target, ev) {
+        if (!target || !target.closest) return null;
+        const run = target.closest('[data-ox]');
+        if (run && ev) {
+          const ox = +run.dataset.ox,
+            oy = +run.dataset.oy,
+            dir = run.dataset.dir;
+          const x = dir === 'y' ? ox : ox + Math.floor(Math.max(0, ev.offsetX) / C3);
+          const y = dir === 'x' ? oy : oy + Math.floor(Math.max(0, ev.offsetY) / C3);
+          return x >= 0 && y >= 0 && x < state.map.width && y < state.map.height ? { x, y } : null;
+        }
+        const el = target.closest('[data-x]');
+        return el ? { x: +el.dataset.x, y: +el.dataset.y } : null;
+      }
+      function hover3D(c, ev) {
+        const tip = $('tooltip3d');
+        if (v3.hover) v3.hover.classList.remove('hover');
+        v3.hover = null;
+        if (!c) {
+          tip.style.display = 'none';
+          return;
+        }
+        paintCell(c);
+        const el = $('hit3d') && $('hit3d').children[c.y * state.map.width + c.x];
+        if (el) {
+          el.classList.add('hover');
+          v3.hover = el;
+        }
+        const r = $('stage3d').getBoundingClientRect();
+        tip.textContent = cellInfo(c);
+        tip.style.left = `${ev.clientX - r.left}px`;
+        tip.style.top = `${ev.clientY - r.top}px`;
+        tip.style.display = 'block';
+      }
+
+      function setup3D() {
+        const st = $('stage3d');
+        const icons = { left: ICONS.rotL, right: ICONS.rotR, top: ICONS.topView, reset: ICONS.target };
+        $('ctrl3d')
+          .querySelectorAll('button')
+          .forEach((b) => (b.innerHTML = icons[b.dataset.act]));
+        st.addEventListener('contextmenu', (e) => e.preventDefault());
+        st.addEventListener('pointerdown', (ev) => {
+          if (ev.target.closest('.ctrl3d')) return;
+          const c = cellOf3D(ev.target, ev);
+          // 浏览模式下拖动旋转、单击等同于点格子；编辑/放置模式下左键操作格子，右键或中键拖动旋转
+          if (ev.button !== 0 || state.mode === 'view' || !c) {
+            cam.drag = { x: ev.clientX, y: ev.clientY, yaw: cam.yaw, pitch: cam.pitch, moved: false, cell: c, button: ev.button };
+            st.setPointerCapture(ev.pointerId);
+            return;
+          }
+          handleCellDown(c, null);
+        });
+        st.addEventListener('pointermove', (ev) => {
+          const d = cam.drag;
+          if (d) {
+            const dx = ev.clientX - d.x,
+              dy = ev.clientY - d.y;
+            if (!d.moved && Math.hypot(dx, dy) > 4) {
+              d.moved = true;
+              st.classList.add('dragging');
+              hover3D(null);
+            }
+            if (d.moved) {
+              cam.yaw = d.yaw + dx * 0.35;
+              cam.pitch = clamp(d.pitch - dy * 0.3, 8, 78);
+              applyCamera(false);
+            }
+            return;
+          }
+          hover3D(cellOf3D(ev.target, ev), ev);
+        });
+        const end = () => {
+          const d = cam.drag;
+          if (d) {
+            cam.drag = null;
+            st.classList.remove('dragging');
+            if (!d.moved && d.button === 0 && d.cell) handleCellDown(d.cell, null);
+          }
+          state.painting = null;
+        };
+        st.addEventListener('pointerup', end);
+        st.addEventListener('pointercancel', end);
+        st.addEventListener('pointerleave', () => hover3D(null));
+        st.addEventListener(
+          'wheel',
+          (ev) => {
+            ev.preventDefault();
+            cam.zoom = clamp(cam.zoom * Math.exp(-ev.deltaY * 0.0012), 0.55, 2.6);
+            applyCamera(false);
+          },
+          { passive: false },
+        );
+        $('ctrl3d').addEventListener('click', (e) => {
+          const b = e.target.closest('button');
+          if (!b) return;
+          const act = b.dataset.act;
+          if (act === 'left') cam.yaw -= 45;
+          if (act === 'right') cam.yaw += 45;
+          if (act === 'top') cam.pitch = cam.pitch > 20 ? 8 : CAM_DEFAULT.pitch;
+          if (act === 'reset') Object.assign(cam, CAM_DEFAULT);
+          applyCamera(true);
+        });
+        // 舞台尺寸变化（窗口缩放、首次布局完成、切换视图）时自动适配缩放
+        if (window.ResizeObserver) new ResizeObserver(() => state.view === '3d' && fit3D()).observe(st);
+        else window.addEventListener('resize', () => state.view === '3d' && fit3D());
       }
 
       /* 自检：在控制台执行 __selfTest() 可跑全部预设并核对期望结果与黄金步数 */
@@ -4123,6 +4918,9 @@
         state,
         toggleObstacle,
         onGridChanged,
+        setView,
+        cam,
+        applyCamera,
       };
       init();
     </script>
