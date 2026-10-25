@@ -1,0 +1,50 @@
+name: 缺陷报告
+description: 报告一个可复现的问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量填写完整，缺少复现步骤的 Issue 很难被处理。
+        如果涉及安全问题，请勿在此公开，改用 SECURITY.md 中的联系方式。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述
+      description: 发生了什么？期望发生什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 按顺序列出最小复现路径
+      placeholder: |
+        1. 执行 xxx
+        2. 点击 yyy
+        3. 出现 zzz
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境信息
+      description: 操作系统、运行时版本、依赖版本、提交号
+      placeholder: |
+        - OS: Windows 11 26100
+        - 版本: v0.1.0 / 提交 abc1234
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志或截图
+      description: 请粘贴报错堆栈（注意先移除密钥和个人信息）
+      render: shell
+    validations:
+      required: false

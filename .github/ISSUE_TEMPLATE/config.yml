@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: 讨论与提问
+    url: https://github.com/emolTzi/traeprogram/discussions
+    about: 使用问题、方案讨论请走 Discussions，不要开 Issue。

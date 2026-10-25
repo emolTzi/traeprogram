@@ -1,0 +1,29 @@
+# 统一换行符：仓库内一律使用 LF，检出时按平台自动转换
+* text=auto eol=lf
+
+# Windows 脚本必须保持 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 二进制文件不做文本转换和 diff
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.7z binary
+*.gz binary
+*.exe binary
+*.dll binary
+*.pdb binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+
+# 不参与语言统计与 diff 噪声
+*.min.js linguist-generated=true
+*.min.css linguist-generated=true
